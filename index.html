@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedidos — Cetec Palmas | Gestão de Equipamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#0d1b2a;--navy2:#162032;--blue:#1d6fdb;--blue-l:#3b8ef0;--cyan:#00c2cb;--bg:#f4f6fb;--white:#ffffff;--border:#e2e8f0;--text:#1a2332;--muted:#64748b;--success:#16a34a;--danger:#dc2626;--radius:12px;--shadow:0 2px 16px rgba(0,0,0,0.07);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── HEADER ── */
+header{background:var(--navy);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--blue),var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;}
+.logo-text{color:#fff;font-size:15px;font-weight:600;letter-spacing:0.2px;}
+.logo-text span{color:var(--cyan);font-weight:300;}
+.nav-links{display:flex;align-items:center;gap:8px;}
+.nav-btn{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:7px 14px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.nav-btn:hover{background:rgba(255,255,255,0.15);color:#fff;}
+.nav-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+.nav-btn.primary:hover{background:var(--blue-l);}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;max-width:1100px;margin:40px auto;width:100%;gap:28px;padding:0 24px;}
+.sidebar{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+.info-box{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--radius);padding:20px;color:#fff;}
+.info-box h4{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--cyan);}
+.info-box p{font-size:12px;line-height:1.6;color:rgba(255,255,255,0.65);}
+.sla-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
+.sla-row{display:flex;justify-content:space-between;font-size:11px;}
+.sla-row span:first-child{color:rgba(255,255,255,0.55);}
+.sla-row span:last-child{color:var(--cyan);font-family:'DM Mono',monospace;}
+.main{flex:1;min-width:0;}
+
+/* ── PROGRESS ── */
+.progress-bar{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:20px 28px;margin-bottom:24px;box-shadow:var(--shadow);}
+.steps{display:flex;align-items:center;}
+.step{display:flex;align-items:center;gap:8px;flex:1;}
+.step-num{width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;}
+.step-num.done{background:var(--success);color:#fff;}
+.step-num.active{background:var(--blue);color:#fff;box-shadow:0 0 0 4px rgba(29,111,219,0.2);}
+.step-num.idle{background:var(--bg);color:var(--muted);border:1px solid var(--border);}
+.step-label{font-size:12px;font-weight:500;transition:color .3s;}
+.step-label.active{color:var(--blue);}
+.step-label.idle{color:var(--muted);}
+.step-label.done{color:var(--success);}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 8px;border-radius:2px;transition:background .3s;}
+.step-line.done{background:var(--success);}
+
+/* ── FORM ── */
+.form-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:32px;box-shadow:var(--shadow);}
+.card-header{margin-bottom:28px;}
+.card-title{font-size:20px;font-weight:600;}
+.card-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:12px;font-weight:600;color:var(--text);letter-spacing:0.3px;}
+label span.req{color:var(--danger);}
+input,select,textarea{border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg);transition:border .2s,box-shadow .2s;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,111,219,0.12);background:#fff;}
+textarea{resize:vertical;min-height:90px;}
+.field-hint{font-size:11px;color:var(--muted);}
+
+/* ── EMAIL SPLIT ── */
+.email-split{display:flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);transition:border .2s,box-shadow .2s;}
+.email-split:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,111,219,0.12);background:#fff;}
+.email-split input{border:none;border-radius:0;background:transparent;padding:10px 4px 10px 14px;flex:1;min-width:0;box-shadow:none !important;}
+.email-domain{display:flex;align-items:center;padding:10px 14px 10px 2px;font-size:14px;color:var(--muted);white-space:nowrap;background:transparent;flex-shrink:0;}
+
+/* ── EQUIPAMENTOS ── */
+.eq-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.eq-card{border:2px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);display:flex;align-items:center;gap:6px;flex-shrink:0;position:relative;}
+.eq-card:hover{border-color:var(--blue-l);background:#f0f6ff;}
+.eq-card.selected{border-color:var(--blue);background:#eef4ff;box-shadow:0 0 0 3px rgba(29,111,219,0.1);}
+.eq-card.selected::after{content:'✓';position:absolute;top:3px;right:5px;font-size:10px;font-weight:700;color:var(--blue);}
+.eq-card .eq-emoji{font-size:22px;display:block;flex-shrink:0;}
+.eq-card .eq-name{font-size:11px;font-weight:600;color:var(--text);line-height:1.2;white-space:nowrap;}
+
+/* ── CARRINHO ── */
+.cart-wrap{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.cart-item{display:grid;grid-template-columns:auto 1fr 80px auto;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;}
+.cart-item-nome{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.cart-item input[type=number]{width:64px;text-align:center;padding:6px 8px;font-size:13px;}
+.cart-item input[type=text]{padding:6px 10px;font-size:13px;}
+.cart-item-remove{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px;border-radius:6px;transition:color .2s;}
+.cart-item-remove:hover{color:var(--danger);}
+.cart-hint{font-size:12px;color:var(--muted);text-align:center;padding:12px;border:1.5px dashed var(--border);border-radius:10px;}
+
+/* ── URGÊNCIA ── */
+.urgency-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.urg-card{border:2px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .2s;background:var(--bg);}
+.urg-card .urg-label{font-size:12px;font-weight:600;}
+.urg-card .urg-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.urg-card.sel-baixa{border-color:#16a34a;background:#f0fdf4;}
+.urg-card.sel-media{border-color:#d97706;background:#fffbeb;}
+.urg-card.sel-alta{border-color:#dc2626;background:#fef2f2;}
+
+/* ── TEMPO DE USO ── */
+.tempo-atalhos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.tempo-btn{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .2s;}
+.tempo-btn:hover{border-color:var(--blue);color:var(--blue);}
+.tempo-btn.ativo{background:var(--blue);color:#fff;border-color:var(--blue);}
+.tempo-btn.indet.ativo{background:var(--navy);border-color:var(--navy);}
+.tempo-livre{display:flex;align-items:center;gap:8px;}
+.tempo-livre input{width:90px;text-align:center;}
+.tempo-livre span{font-size:13px;color:var(--muted);}
+
+/* ── COMPROMISSO ── */
+.compromisso-box{background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;}
+.compromisso-box input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:2px;cursor:pointer;accent-color:var(--blue);}
+.compromisso-box label{font-size:12px;color:#78350f;line-height:1.6;cursor:pointer;}
+.compromisso-box label strong{color:#92400e;}
+
+/* ── REVISÃO ── */
+.review-table{width:100%;border-collapse:collapse;font-size:13px;}
+.review-table tr td{padding:10px 0;border-bottom:1px solid var(--bg);}
+.review-table tr:last-child td{border-bottom:none;}
+.review-table td:first-child{color:var(--muted);font-weight:500;width:40%;}
+.review-table td:last-child{color:var(--text);font-weight:600;}
+.req-number-preview{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--blue);background:#eef4ff;padding:10px 16px;border-radius:8px;display:inline-block;margin-bottom:20px;border:1px solid rgba(29,111,219,0.2);}
+
+/* ── BOTÕES ── */
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:28px;}
+.btn{padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--muted);background:var(--bg);}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:var(--blue-l);}
+.btn-primary:disabled{background:var(--muted);cursor:not-allowed;}
+
+/* ── SUCCESS ── */
+.success-screen{display:none;flex-direction:column;align-items:center;text-align:center;padding:48px 32px;}
+.success-icon{width:72px;height:72px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+.success-icon svg{width:36px;height:36px;stroke:var(--success);stroke-width:2.5;fill:none;}
+.success-num{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--blue);background:#eef4ff;padding:10px 24px;border-radius:8px;display:inline-block;margin:12px 0;border:1px solid rgba(29,111,219,0.2);}
+.success-title{font-size:22px;font-weight:700;margin-bottom:8px;}
+.success-msg{font-size:14px;color:var(--muted);max-width:400px;line-height:1.7;}
+
+/* ── STEP ── */
+.step-pane{display:none;}
+.step-pane.active{display:block;}
+
+/* ── AUTO PREENCHIMENTO ── */
+.sugestoes-lista{position:absolute;top:4px;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:50;max-height:220px;overflow-y:auto;}
+.sugestao-item{padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
+.sugestao-item:last-child{border-bottom:none;}
+.sugestao-item:hover{background:#eef4ff;}
+.sugestao-nome{font-weight:600;color:var(--text);}
+.sugestao-info{font-size:11px;color:var(--muted);margin-top:2px;}
+
+
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,0.45);backdrop-filter:blur(3px);z-index:999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal-box{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.18);transform:translateY(20px) scale(0.97);transition:transform .25s;text-align:center;}
+.modal-overlay.show .modal-box{transform:translateY(0) scale(1);}
+.modal-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.modal-icon svg{width:26px;height:26px;stroke-width:2.5;fill:none;}
+.modal-icon.info{background:#fef2f2;} .modal-icon.info svg{stroke:var(--danger);}
+.modal-icon.aviso{background:#fffbeb;} .modal-icon.aviso svg{stroke:#d97706;}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.modal-msg{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.modal-msg strong{color:var(--danger);font-weight:600;}
+.modal-btn{border:none;border-radius:8px;padding:10px 32px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.modal-btn.blue{background:var(--blue);color:#fff;}
+.modal-btn.red{background:var(--danger);color:#fff;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.form-card,.progress-bar{animation:fadeUp .4s ease both;}
+
+footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
+
+@media(max-width:768px){
+  .layout{flex-direction:column;padding:0 16px;}
+  .sidebar{width:100%;}
+  .eq-grid{flex-wrap:wrap;}
+  .form-grid{grid-template-columns:1fr;}
+  .nav-links .nav-btn span{display:none;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+    <div class="logo-text">Pedidos <span>Cetec Palmas</span></div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-btn" href="tecnico.html">🛠️ <span>Área do Técnico</span></a>
+    <a class="nav-btn primary" href="gerente.html">🔐 <span>Central de Aprovações</span></a>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="info-box">
+      <h4>Prazo de Resposta</h4>
+      <p>Após o envio, o Setor de Aprovações analisará sua solicitação e retornará por e-mail.</p>
+      <div class="sla-list">
+        <div class="sla-row"><span>🔴 Alta prioridade</span><span>1 dia útil</span></div>
+        <div class="sla-row"><span>🟡 Média prioridade</span><span>3 dias úteis</span></div>
+        <div class="sla-row"><span>🟢 Baixa prioridade</span><span>5 dias úteis</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="progress-bar" id="progressBar">
+      <div class="steps">
+        <div class="step"><div class="step-num active" id="sn1">1</div><div class="step-label active" id="sl1">Identificação</div></div>
+        <div class="step-line" id="line1"></div>
+        <div class="step"><div class="step-num idle" id="sn2">2</div><div class="step-label idle" id="sl2">Equipamento</div></div>
+        <div class="step-line" id="line2"></div>
+        <div class="step"><div class="step-num idle" id="sn3">3</div><div class="step-label idle" id="sl3">Revisão & Envio</div></div>
+      </div>
+    </div>
+
+    <div class="form-card">
+
+      <!-- STEP 1 -->
+      <div class="step-pane active" id="pane1">
+        <div class="card-header">
+          <div class="card-title">Dados do Solicitante</div>
+          <div class="card-sub">Preencha suas informações para identificação da solicitação.</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nome completo <span class="req">*</span></label>
+            <input type="text" id="f_nome" placeholder="Ex.: Maria Silva" autocomplete="off" oninput="buscarColaborador(this.value)">
+            <div id="sugestoes" style="position:relative;"></div>
+          </div>
+          <div class="form-group">
+            <label>E-mail <span class="req">*</span></label>
+            <div class="email-split">
+              <input type="text" id="f_email" placeholder="seunome" autocomplete="off" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._+\-]/g,'');buscarColaborador(this.value,'f_email')">
+            <div id="sugestoes_email" style="position:relative;"></div>
+              <span class="email-domain">@sistemafieto.com.br</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Matrícula <span class="req">*</span></label>
+            <input type="text" id="f_matricula" placeholder="Ex.: 1806" autocomplete="off" oninput="buscarColaborador(this.value,'f_matricula')">
+            <div id="sugestoes_matricula" style="position:relative;"></div>
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" id="f_ramal" placeholder="Ex.: (63) 99999-9999" maxlength="11">
+          </div>
+          <div class="form-group">
+            <label>Setor / Departamento <span class="req">*</span></label>
+            <select id="f_setor">
+              <option value="">Selecione...</option>
+              <option>Administrativo</option>
+              <option>COPED</option>
+              <option>Docentes</option>
+              <option>Financeiro</option>
+              <option>Gerência</option>
+              <option>Mercado</option>
+              <option>RH</option>
+              <option>SAC</option>
+              <option>Secretaria</option>
+              <option>STI</option>
+              <option>TI</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tipo de Atendimento <span class="req">*</span></label>
+            <select id="f_unidade">
+              <option value="">Selecione...</option>
+              <option>Uso Interno (Cetec)</option>
+              <option>Uso Externo</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="goStep(2)">Próximo →</button></div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-pane" id="pane2">
+        <div class="card-header">
+          <div class="card-title">Equipamentos Solicitados</div>
+          <div class="card-sub">Selecione um ou mais equipamentos. Cada item terá sua própria quantidade e especificação.</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Tipo de equipamento <span class="req">*</span></label>
+          <div class="eq-grid" id="eqGrid">
+            <div class="eq-card" onclick="toggleEq(this,'Notebook','💻')"><span class="eq-emoji">💻</span><div class="eq-name">Notebook</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Computador','🖥️')"><span class="eq-emoji">🖥️</span><div class="eq-name">Computador</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Monitor','🖵')"><span class="eq-emoji">🖵</span><div class="eq-name">Monitor</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Projetor','📽️')"><span class="eq-emoji">📽️</span><div class="eq-name">Projetor</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Mouse','🖱️')"><span class="eq-emoji">🖱️</span><div class="eq-name">Mouse</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Teclado','⌨️')"><span class="eq-emoji">⌨️</span><div class="eq-name">Teclado</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Óculos de Realidade Aumentada','🥽')"><span class="eq-emoji">🥽</span><div class="eq-name">Óculos de R. Aumentada</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Fone de Ouvido','🎧')"><span class="eq-emoji">🎧</span><div class="eq-name">Fone de Ouvido</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Outros','📦')"><span class="eq-emoji">📦</span><div class="eq-name">Outros</div></div>
+            <div class="eq-card" onclick="toggleEq(this,'Auditório','👥')"><span class="eq-emoji">👥</span><div class="eq-name">Auditório</div></div>
+          </div>
+          <div id="itemCart" class="cart-wrap">
+            <div class="cart-hint">Selecione ao menos um equipamento acima para adicionar ao pedido.</div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Tempo de Uso <span class="req">*</span></label>
+            <div class="tempo-atalhos">
+              <button type="button" class="tempo-btn" onclick="selecionarTempo(this,7)">7 dias</button>
+              <button type="button" class="tempo-btn" onclick="selecionarTempo(this,15)">15 dias</button>
+              <button type="button" class="tempo-btn" onclick="selecionarTempo(this,30)">30 dias</button>
+              <button type="button" class="tempo-btn indet" onclick="selecionarTempo(this,0)">Indeterminado</button>
+            </div>
+            <div class="tempo-livre" id="tempoLivreWrap">
+              <input type="number" id="f_tempo" min="1" max="365" placeholder="Ex.: 10" oninput="limparAtalhosTemp()">
+              <span>dias</span>
+            </div>
+            <span class="field-hint">Selecione um atalho ou digite o número de dias manualmente.</span>
+          </div>
+          <div class="form-group full">
+            <label>Justificativa <span class="req">*</span></label>
+            <textarea id="f_justificativa" placeholder="Descreva o motivo da solicitação e como o equipamento será utilizado..."></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Urgência <span class="req">*</span></label>
+            <div class="urgency-grid">
+              <div class="urg-card" onclick="selectUrg(this,'Baixa','🟢')">
+                <div class="urg-label">🟢 Baixa</div>
+                <div class="urg-desc">Sem impacto imediato nas atividades (planejamento futuro)</div>
+              </div>
+              <div class="urg-card" onclick="selectUrg(this,'Média','🟡')">
+                <div class="urg-label">🟡 Média</div>
+                <div class="urg-desc">Atividade em andamento, mas ainda executável sem o equipamento</div>
+              </div>
+              <div class="urg-card" onclick="selectUrg(this,'Alta','🔴')">
+                <div class="urg-label">🔴 Alta</div>
+                <div class="urg-desc">Operação paralisada ou com risco real de prejuízo imediato</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group full" id="compromissoWrap" style="display:none;">
+            <div class="compromisso-box">
+              <input type="checkbox" id="chkCompromisso">
+              <label for="chkCompromisso">
+                <strong>Termo de compromisso:</strong> Ao solicitar este equipamento, me comprometo a devolvê-lo à equipe de TI dentro do prazo informado.
+                Estou ciente de que o <strong>não cumprimento do prazo poderá resultar em atraso nas próximas solicitações</strong>.
+              </label>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>📅 Agendar Retirada</label>
+            <div class="form-grid" style="margin-top:4px;">
+              <div class="form-group">
+                <label style="font-weight:400;font-size:11px;color:var(--muted);">Data</label>
+                <input type="date" id="f_data_retirada" min="" onload="this.min=new Date().toISOString().split('T')[0]">
+              </div>
+              <div class="form-group">
+                <label style="font-weight:400;font-size:11px;color:var(--muted);">Horário</label>
+                <input type="time" id="f_hora_retirada">
+              </div>
+            </div>
+            <span class="field-hint">Opcional. Deixe em branco se ainda não souber a data.</span>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="goStep(1)">← Voltar</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Revisar →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-pane" id="pane3">
+        <div class="card-header">
+          <div class="card-title">Revisão da Solicitação</div>
+          <div class="card-sub">Confira os dados antes de enviar. Um número de protocolo será gerado automaticamente.</div>
+        </div>
+        <div class="req-number-preview" id="previewNum">—</div>
+        <table class="review-table">
+          <tr><td>Solicitante</td><td id="rv_nome">—</td></tr>
+          <tr><td>Matrícula</td><td id="rv_matricula">—</td></tr>
+          <tr><td>E-mail</td><td id="rv_email">—</td></tr>
+          <tr><td>Setor</td><td id="rv_setor">—</td></tr>
+          <tr><td>Tipo Atendimento</td><td id="rv_unidade">—</td></tr>
+          <tr><td>Telefone</td><td id="rv_ramal">—</td></tr>
+          <tr><td>Itens Solicitados</td><td id="rv_eq">—</td></tr>
+          <tr><td>Urgência</td><td id="rv_urg">—</td></tr>
+          <tr><td>Tempo de Uso</td><td id="rv_tempo">—</td></tr>
+          <tr><td>Retirada Agendada</td><td id="rv_retirada">—</td></tr>
+          <tr><td>Justificativa</td><td id="rv_just" style="white-space:pre-wrap;">—</td></tr>
+        </table>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="goStep(2)">← Voltar</button>
+          <button class="btn btn-primary" id="btnEnviar" onclick="enviarSolicitacao()">📨 Enviar Solicitação</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="success-screen" id="successScreen">
+        <div class="success-icon"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <h2 class="success-title">Solicitação Enviada!</h2>
+        <div class="success-num" id="successNum">—</div>
+        <p class="success-msg">Sua solicitação foi encaminhada à equipe de TI.<br>Você receberá uma cópia no seu e-mail e será notificado sobre a decisão em breve.</p>
+        <button class="btn btn-outline" style="margin-top:24px;" onclick="novaSolicitacao()">+ Nova Solicitação</button>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<footer>Pedidos — Cetec Palmas &nbsp;·&nbsp; Gestão de Equipamentos &nbsp;·&nbsp; <span id="anoFooter"></span><br><small style="color:var(--muted);opacity:0.6;">by Andresson Mouzinho</small></footer>
+
+<!-- MODAL VALIDAÇÃO -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
+  <div class="modal-box">
+    <div class="modal-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+    <div class="modal-title">Campo obrigatório</div>
+    <div class="modal-msg" id="modalMsg">—</div>
+    <button class="modal-btn blue" onclick="fecharModal()">Entendido</button>
+  </div>
+</div>
+
+<!-- MODAL ERRO -->
+<div class="modal-overlay" id="erroOverlay" onclick="fecharErro(event)">
+  <div class="modal-box">
+    <div class="modal-icon aviso"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+    <div class="modal-title">Falha no envio</div>
+    <div class="modal-msg" id="erroMsg">—</div>
+    <button class="modal-btn red" onclick="fecharErro()">Fechar</button>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE ──
+const { createClient } = supabase;
+const sb = createClient(
+  'https://lkivpaalalcqxctqhpip.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxraXZwYWFsYWxjcXhjdHFocGlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzYzMDIsImV4cCI6MjA5NDcxMjMwMn0.uqfAlC1jnOxMRJoTj1Rczy_MnQcER8C8OaiW0-puk8s'
+);
+
+// ── EMAILJS ──
+const EMAILJS_PUBLIC_KEY = 'bLFbU7GNf8doxB-tQ';
+const EMAILJS_SERVICE_ID = 'service_c7tq8jl';
+const TEMPLATE_GESTOR    = 'modelo_mobile';
+const TEMPLATE_USUARIO   = 'modelo_mobile';
+const EMAIL_GESTOR       = 'andressonmouzinho@sistemafieto.com.br';
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+// ── ESTADO ──
+let selectedItems = [];
+let selectedUrg = '', selectedUrgEmoji = '';
+let reqNumber = '', tempoUso = '';
+
+// ── SEGURANÇA: Sanitização XSS ──
+function sanitize(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
+// ── AUTO PREENCHIMENTO ──
+let buscaTimeout = null;
+const SUG_IDS = { f_nome: 'sugestoes', f_matricula: 'sugestoes_matricula', f_email: 'sugestoes_email' };
+
+async function buscarColaborador(valor, campo = 'f_nome') {
+  const sugId = SUG_IDS[campo];
+  const sugestoesEl = document.getElementById(sugId);
+  clearTimeout(buscaTimeout);
+
+  // Fecha as outras listas
+  Object.entries(SUG_IDS).forEach(([k, id]) => { if(k !== campo){ const el=document.getElementById(id); if(el) el.innerHTML=''; }});
+
+  if (valor.length < 2) { sugestoesEl.innerHTML = ''; return; }
+
+  const filtro = campo === 'f_matricula' ? `matricula.ilike.%${valor}%` :
+                 campo === 'f_email'     ? `email.ilike.%${valor}%`     :
+                                          `nome.ilike.%${valor}%`;
+
+  buscaTimeout = setTimeout(async () => {
+    const { data } = await sb.from('colaboradores').select('*')
+      .or(filtro).eq('ativo', true).order('nome').limit(8);
+
+    if (!data || !data.length) { sugestoesEl.innerHTML = ''; return; }
+
+    sugestoesEl.innerHTML = `<div class="sugestoes-lista">${
+      data.map(c => `
+        <div class="sugestao-item" onclick="preencherColaborador(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+          <div class="sugestao-nome">${sanitize(c.nome)}</div>
+          <div class="sugestao-info">${sanitize(c.setor)} · ${c.cargo || ''} ${c.matricula ? '· Matr. '+c.matricula : ''}</div>
+        </div>`).join('')
+    }</div>`;
+  }, 300);
+}
+
+function preencherColaborador(c) {
+  document.getElementById('f_nome').value      = c.nome;
+  document.getElementById('f_matricula').value = c.matricula || '';
+  document.getElementById('f_email').value     = c.email;
+  document.getElementById('f_ramal').value     = c.telefone || '';
+  Object.values(SUG_IDS).forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=''; });
+  const setor = document.getElementById('f_setor');
+  for (let opt of setor.options) {
+    if (opt.value.toLowerCase() === (c.setor || '').toLowerCase()) { setor.value = opt.value; break; }
+  }
+}
+
+// Fecha sugestões ao clicar fora
+document.addEventListener('click', e => {
+  const dentroDeAlgum = Object.keys(SUG_IDS).some(id => e.target.closest('#'+id)) ||
+                        Object.values(SUG_IDS).some(id => e.target.closest('#'+id));
+  if (!dentroDeAlgum) Object.values(SUG_IDS).forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=''; });
+});
+function toggleEq(card, type, emoji) {
+  const idx = selectedItems.findIndex(i => i.type === type);
+  if (idx >= 0) { selectedItems.splice(idx,1); card.classList.remove('selected'); }
+  else {
+    if (type === 'Auditório') {
+      selectedItems.push({type, emoji, qty:1, spec:'', dias:[{data:'', inicio:'', termino:''}]});
+    } else {
+      selectedItems.push({type, emoji, qty:1, spec:''});
+    }
+    card.classList.add('selected');
+  }
+  renderCart();
+  atualizarCamposAuditorio();
+}
+function renderCart() {
+  const cart = document.getElementById('itemCart');
+  if (!selectedItems.length) { cart.innerHTML='<div class="cart-hint">Selecione ao menos um equipamento acima para adicionar ao pedido.</div>'; return; }
+  cart.innerHTML = selectedItems.map((item,i) => {
+    if (item.type === 'Auditório') {
+      const dias = item.dias || [{data:'', inicio:'', termino:''}];
+      const diasHTML = dias.map((d, di) => `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;">
+          <div>
+            ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Data *</label>':''}
+            <input type="date" value="${d.data||''}" min="${new Date().toISOString().split('T')[0]}"
+              oninput="selectedItems[${i}].dias[${di}].data=this.value" style="font-size:12px;padding:7px 8px;width:100%;">
+          </div>
+          <div>
+            ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Início *</label>':''}
+            <input type="time" value="${d.inicio||''}"
+              oninput="selectedItems[${i}].dias[${di}].inicio=this.value" style="font-size:12px;padding:7px 8px;width:100%;">
+          </div>
+          <div>
+            ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Término *</label>':''}
+            <input type="time" value="${d.termino||''}"
+              oninput="selectedItems[${i}].dias[${di}].termino=this.value" style="font-size:12px;padding:7px 8px;width:100%;">
+          </div>
+          <div>
+            ${di===0?'<label style="font-size:11px;display:block;margin-bottom:3px;">&nbsp;</label>':''}
+            ${di>0?`<button onclick="removerDiaAuditorio(${i},${di})" style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--muted);font-size:13px;">✕</button>`:'<span></span>'}
+          </div>
+        </div>`).join('');
+      return `<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="cart-item-nome">👥 Auditório</div>
+          <button class="cart-item-remove" onclick="removerItem(${i})">✕</button>
+        </div>
+        ${diasHTML}
+        <button onclick="adicionarDiaAuditorio(${i})" style="width:100%;padding:8px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;font-size:13px;color:var(--blue);cursor:pointer;margin-top:4px;">+ Adicionar outro dia</button>
+        <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:10px 12px;font-size:12px;color:#78350f;margin-top:12px;">
+          🚫 Lembrete: não é permitida a entrada de bebidas ou alimentos no auditório. Contamos com a sua colaboração pra manter o espaço em ordem! 😊
+        </div>
+      </div>`;
+    }
+    return `<div class="cart-item">
+      <div class="cart-item-nome">${item.emoji} ${item.type}</div>
+      <input type="text" placeholder="${item.type==='Outros'?'Especificação obrigatória *':'Especificação (opcional)'}"
+        value="${item.spec}" oninput="selectedItems[${i}].spec=this.value" style="flex:1;${item.type==='Outros'&&!item.spec?'border-color:var(--danger);':''}">
+      <input type="number" min="1" max="5" value="${item.qty}"
+        oninput="selectedItems[${i}].qty=Math.min(5,Math.max(1,parseInt(this.value)||1));this.value=selectedItems[${i}].qty">
+      <button class="cart-item-remove" onclick="removerItem(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+function removerItem(idx) {
+  const type = selectedItems[idx].type;
+  selectedItems.splice(idx,1);
+  document.querySelectorAll('.eq-card').forEach(c => { if(c.querySelector('.eq-name')?.textContent===type) c.classList.remove('selected'); });
+  renderCart();
+  atualizarCamposAuditorio();
+}
+
+// ── AUDITÓRIO DIAS ──
+function adicionarDiaAuditorio(i) {
+  if (!selectedItems[i].dias) selectedItems[i].dias = [];
+  selectedItems[i].dias.push({data:'', inicio:'', termino:''});
+  renderCart();
+}
+function removerDiaAuditorio(i, di) {
+  selectedItems[i].dias.splice(di, 1);
+  renderCart();
+}
+
+// ── CAMPOS CONDICIONAIS AUDITÓRIO ──
+function atualizarCamposAuditorio() {
+  const temAuditorio = selectedItems.some(i => i.type === 'Auditório');
+  const temOutros    = selectedItems.some(i => i.type !== 'Auditório');
+  const camposOcultar = ['f_tempo', 'tempoLivreWrap', 'compromissoWrap'];
+
+  // Tempo de uso, Urgência, Agendar Retirada
+  document.querySelectorAll('.form-group.full').forEach(el => {
+    const label = el.querySelector('label');
+    if (!label) return;
+    const txt = label.textContent || '';
+    if (txt.includes('Tempo de Uso') || txt.includes('Urgência') || txt.includes('Agendar Retirada')) {
+      el.style.display = (temAuditorio && !temOutros) ? 'none' : '';
+    }
+  });
+
+  // Atualiza placeholder da justificativa
+  const just = document.getElementById('f_justificativa');
+  if (just) {
+    just.placeholder = (temAuditorio && !temOutros)
+      ? 'Descreva o objetivo do evento, número estimado de participantes e qualquer necessidade especial para o uso do espaço...'
+      : 'Descreva o motivo da solicitação e como o equipamento será utilizado...';
+  }
+}
+
+// ── URGÊNCIA ──
+function selectUrg(el,label,emoji) {
+  document.querySelectorAll('.urg-card').forEach(c=>c.className='urg-card');
+  const map={Baixa:'sel-baixa',Média:'sel-media',Alta:'sel-alta'};
+  el.classList.add(map[label]);
+  selectedUrg=label; selectedUrgEmoji=emoji;
+}
+
+// ── TEMPO DE USO ──
+function selecionarTempo(btn,dias) {
+  document.querySelectorAll('.tempo-btn').forEach(b=>b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  if(dias===0){
+    tempoUso='Indeterminado';
+    document.getElementById('f_tempo').value='';
+    document.getElementById('tempoLivreWrap').style.opacity='0.4';
+    document.getElementById('f_tempo').disabled=true;
+    document.getElementById('compromissoWrap').style.display='none';
+    document.getElementById('chkCompromisso').checked=false;
+  } else {
+    tempoUso=`${dias} dias`;
+    document.getElementById('f_tempo').value=dias;
+    document.getElementById('tempoLivreWrap').style.opacity='1';
+    document.getElementById('f_tempo').disabled=false;
+    document.getElementById('compromissoWrap').style.display='flex';
+  }
+}
+function limparAtalhosTemp() {
+  document.querySelectorAll('.tempo-btn').forEach(b=>b.classList.remove('ativo'));
+  const v=document.getElementById('f_tempo').value;
+  tempoUso=v?`${v} dias`:'';
+  document.getElementById('compromissoWrap').style.display=v?'flex':'none';
+  if(!v) document.getElementById('chkCompromisso').checked=false;
+}
+
+// ── VALIDAÇÃO ──
+function validarStep(n) {
+  if(n===1){
+    const nome=document.getElementById('f_nome').value.trim();
+    const email=document.getElementById('f_email').value.trim();
+    const setor=document.getElementById('f_setor').value.trim();
+    const atend=document.getElementById('f_unidade').value.trim();
+    if(!nome){showModal('O campo <strong>Nome completo</strong> é obrigatório.');return false;}
+    if(!email){showModal('Informe seu <strong>E-mail</strong> antes de continuar.');return false;}
+    const matricula=document.getElementById('f_matricula').value.trim();
+    if(!matricula){showModal('O campo <strong>Matrícula</strong> é obrigatório.');return false;}
+    if(!setor){showModal('O campo <strong>Setor / Departamento</strong> é obrigatório.');return false;}
+    if(!atend){showModal('O campo <strong>Tipo de Atendimento</strong> é obrigatório.');return false;}
+  }
+  if(n===2){
+    if(!selectedItems.length){showModal('Selecione ao menos um <strong>Equipamento</strong>.');return false;}
+    const outros=selectedItems.find(i=>i.type==='Outros'&&!i.spec.trim());
+    if(outros){showModal('O item <strong>Outros</strong> exige uma <strong>Especificação</strong>.');return false;}
+    const audit=selectedItems.find(i=>i.type==='Auditório');
+    if(audit){
+      const dias=audit.dias||[];
+      for(let di=0;di<dias.length;di++){
+        const d=dias[di];
+        if(!d.data){showModal(`Informe a <strong>Data</strong> do dia ${di+1} do Auditório.`);return false;}
+        if(!d.inicio){showModal(`Informe o <strong>Horário de Início</strong> do dia ${di+1} do Auditório.`);return false;}
+        if(!d.termino){showModal(`Informe o <strong>Horário de Término</strong> do dia ${di+1} do Auditório.`);return false;}
+        if(d.termino<=d.inicio){showModal(`O <strong>Horário de Término</strong> do dia ${di+1} deve ser maior que o início.`);return false;}
+      }
+    }
+    const tempoVal=document.getElementById('f_tempo').value;
+    if(!tempoUso&&!tempoVal){showModal('Informe o <strong>Tempo de Uso</strong>.');return false;}
+    if(tempoVal) tempoUso=`${tempoVal} dias`;
+    if(!document.getElementById('f_justificativa').value.trim()){showModal('O campo <strong>Justificativa</strong> é obrigatório.');return false;}
+    if(!selectedUrg){showModal('Selecione o <strong>Nível de Urgência</strong>.');return false;}
+    if(tempoUso!=='Indeterminado'&&!document.getElementById('chkCompromisso').checked){showModal('Aceite o <strong>Termo de Compromisso</strong> antes de continuar.');return false;}
+  }
+  return true;
+}
+
+// ── NAVEGAÇÃO ──
+function goStep(n) {
+  if(n>1&&!validarStep(n-1)) return;
+  if(n===3){ if(!reqNumber) reqNumber=gerarNumero(); preencherRevisao(); }
+  for(let i=1;i<=3;i++){
+    document.getElementById('pane'+i).classList.toggle('active',i===n);
+    const sn=document.getElementById('sn'+i), sl=document.getElementById('sl'+i);
+    if(i<n){sn.className='step-num done';sn.textContent='✓';sl.className='step-label done';}
+    else if(i===n){sn.className='step-num active';sn.textContent=i;sl.className='step-label active';}
+    else{sn.className='step-num idle';sn.textContent=i;sl.className='step-label idle';}
+    if(i<3) document.getElementById('line'+i).className='step-line'+(i<n?' done':'');
+  }
+}
+
+function gerarNumero() {
+  const now=new Date();
+  const yy=now.getFullYear(), mm=String(now.getMonth()+1).padStart(2,'0'), dd=String(now.getDate()).padStart(2,'0');
+  return `SOLI-${yy}${mm}${dd}-${Math.floor(1000+Math.random()*9000)}`;
+}
+
+function preencherRevisao() {
+  document.getElementById('previewNum').textContent=reqNumber;
+  document.getElementById('rv_nome').textContent=document.getElementById('f_nome').value;
+  document.getElementById('rv_matricula').textContent=document.getElementById('f_matricula').value||'—';
+  document.getElementById('rv_email').textContent=document.getElementById('f_email').value.trim()+'@sistemafieto.com.br';
+  document.getElementById('rv_setor').textContent=document.getElementById('f_setor').value;
+  document.getElementById('rv_unidade').textContent=document.getElementById('f_unidade').value;
+  document.getElementById('rv_ramal').textContent=document.getElementById('f_ramal').value||'—';
+  document.getElementById('rv_eq').innerHTML=selectedItems.map(i=>`<div>${i.emoji} <strong>${i.type}</strong> — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}</div>`).join('');
+  document.getElementById('rv_urg').textContent=selectedUrgEmoji+' '+selectedUrg;
+  document.getElementById('rv_tempo').textContent=tempoUso||'—';
+  const dataR=document.getElementById('f_data_retirada').value;
+  const horaR=document.getElementById('f_hora_retirada').value;
+  document.getElementById('rv_retirada').textContent=dataR?`${new Date(dataR+'T00:00').toLocaleDateString('pt-BR')} às ${horaR||'—'}`:'Não agendado';
+  document.getElementById('rv_just').textContent=document.getElementById('f_justificativa').value;
+}
+
+// ── ENVIO ──
+async function enviarSolicitacao() {
+  const btn=document.getElementById('btnEnviar');
+  btn.disabled=true; btn.textContent='Enviando...';
+
+  const nome=document.getElementById('f_nome').value;
+  const emailUser=document.getElementById('f_email').value.trim()+'@sistemafieto.com.br';
+  const setor=document.getElementById('f_setor').value;
+  const unidade=document.getElementById('f_unidade').value;
+  const ramal=document.getElementById('f_ramal').value;
+  const just=document.getElementById('f_justificativa').value;
+  const dataHora=new Date().toLocaleString('pt-BR');
+  const itensLista=selectedItems.map(i=>`• ${i.emoji} ${i.type} — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}`).join('\n');
+  const itensResumido=selectedItems.map(i=>`${i.emoji} ${i.type} x${i.qty}`).join(', ');
+
+  try {
+    // Salva no Supabase
+    const { error } = await sb.from('solicitacoes').insert({
+      numero: reqNumber,
+      data: dataHora,
+      nome,
+      matricula: document.getElementById('f_matricula').value.trim(),
+      email: emailUser,
+      telefone: ramal||null,
+      setor,
+      atendimento: unidade,
+      equipamento: itensResumido,
+      quantidade: selectedItems.reduce((s,i)=>s+i.qty,0),
+      especificacao: selectedItems.map(i=>i.spec||'—').join(' | '),
+      urgencia: selectedUrgEmoji+' '+selectedUrg,
+      tempo_uso: tempoUso,
+      data_retirada: document.getElementById('f_data_retirada').value ? `${document.getElementById('f_data_retirada').value} ${document.getElementById('f_hora_retirada').value||'00:00'}` : null,
+      justificativa: just,
+      status: 'Pendente'
+    });
+    if(error) throw error;
+
+    // Define destinatário conforme setor
+    const isDocente = setor.toLowerCase() === 'docentes';
+    const emailAprovador = isDocente ? 'wilmarcorreia@sistemafieto.com.br' : EMAIL_GESTOR;
+
+    // E-mail para o aprovador (Wilmar ou Neuzely)
+    await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_GESTOR, {
+      name: nome, to_email: emailAprovador, email_solicitante: emailUser,
+      numero_solicitacao: reqNumber, equipamento: itensResumido,
+      message: `🖥️ NOVA SOLICITAÇÃO — PEDIDOS — CETEC PALMAS\n\n📋 Protocolo: ${reqNumber}\n📅 Data/Hora: ${dataHora}\n\n👤 SOLICITANTE\n• Nome: ${nome}\n• E-mail: ${emailUser}\n• Setor: ${setor}\n• Tipo: ${unidade}\n• Telefone: ${ramal||'—'}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${selectedUrgEmoji} ${selectedUrg}\n⏱️ Tempo de Uso: ${tempoUso}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\n---\nResponda este e-mail para notificar o solicitante.`
+    });
+
+    // Se Docente, envia cópia também para o técnico
+    if (isDocente) {
+      await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_GESTOR, {
+        name: nome, to_email: EMAIL_GESTOR, email_solicitante: emailUser,
+        numero_solicitacao: reqNumber, equipamento: itensResumido,
+        message: `🖥️ CÓPIA — PEDIDO DE DOCENTE\n\nProtocolo: ${reqNumber}\nSolicitante: ${nome}\nSetor: ${setor}\nEquipamentos: ${itensLista}\nUrgência: ${selectedUrgEmoji} ${selectedUrg}\nTempo de Uso: ${tempoUso}\n\nEste pedido foi encaminhado para aprovação de Wilmar Correia.`
+      });
+    }
+
+    // E-mail usuário
+    await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_USUARIO, {
+      name: 'Pedidos — Cetec Palmas', to_email: emailUser, email_solicitante: emailUser,
+      numero_solicitacao: reqNumber, equipamento: itensResumido,
+      message: `Olá, ${nome}!\n\nSua solicitação foi recebida com sucesso pela equipe de Pedidos do Cetec Palmas.\n\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 PROTOCOLO: ${reqNumber}\n━━━━━━━━━━━━━━━━━━━━━━━\n\n📅 Data/Hora: ${dataHora}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${selectedUrgEmoji} ${selectedUrg}\n⏱️ Tempo de Uso: ${tempoUso}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\nVocê será notificado assim que o técnico responder.\n\nAtenciosamente,\nAndresson Mouzinho\nSupporte em TI - Cetec Palmas`
+    });
+
+    mostrarSucesso();
+  } catch(err) {
+    console.error(err);
+    btn.disabled=false; btn.textContent='📨 Enviar Solicitação';
+    showModalErro(`Não foi possível enviar sua solicitação.<br><br>Tente novamente em instantes. Se persistir, contate o Pedidos.<br><br><span style="font-size:11px;color:#94a3b8;">Erro: ${err?.message||'Desconhecido'}</span>`);
+  }
+}
+
+function mostrarSucesso() {
+  document.querySelectorAll('.step-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('successNum').textContent=reqNumber;
+  document.getElementById('successScreen').style.display='flex';
+}
+function novaSolicitacao(){ location.reload(); }
+
+// ── MODAIS ──
+function showModal(msg){ document.getElementById('modalMsg').innerHTML=msg; document.getElementById('modalOverlay').classList.add('show'); }
+function fecharModal(e){ if(!e||e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('show'); }
+function showModalErro(msg){ document.getElementById('erroMsg').innerHTML=msg; document.getElementById('erroOverlay').classList.add('show'); }
+function fecharErro(e){ if(!e||e.target===document.getElementById('erroOverlay')) document.getElementById('erroOverlay').classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharErro({target:document.getElementById('erroOverlay')}); }});
+
+document.getElementById('anoFooter').textContent=new Date().getFullYear();
+</script>
+</body>
+</html>

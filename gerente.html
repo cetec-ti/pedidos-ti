@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedidos — Central de Aprovações</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#0d1b2a;--navy2:#162032;--blue:#1d6fdb;--blue-l:#3b8ef0;--cyan:#00c2cb;--bg:#f4f6fb;--white:#fff;--border:#e2e8f0;--text:#1a2332;--muted:#64748b;--radius:12px;--shadow:0 2px 16px rgba(0,0,0,0.07);--green:#16a34a;--green-bg:#dcfce7;--green-border:#bbf7d0;--red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;--yellow:#d97706;--yellow-bg:#fffbeb;--yellow-border:#fde68a;--purple:#7c3aed;--purple-bg:#ede9fe;--purple-border:#c4b5fd;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),var(--navy2));}
+.login-box{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,0.3);text-align:center;}
+.login-icon{width:60px;height:60px;background:linear-gradient(135deg,var(--blue),var(--cyan));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+.login-icon svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2;}
+.login-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.login-box input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px;transition:border .2s;}
+.login-box input:focus{border-color:var(--blue);}
+.login-box button{width:100%;margin-top:6px;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s;}
+.login-box button:hover{background:var(--blue-l);}
+.login-err{font-size:12px;color:var(--red);margin-top:8px;display:none;}
+
+/* ── MODAL RECUPERAÇÃO DE SENHA ── */
+.reset-overlay{position:fixed;inset:0;background:rgba(10,20,40,0.5);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.reset-overlay.show{opacity:1;pointer-events:all;}
+.reset-box{background:#fff;border-radius:20px;padding:36px 32px;max-width:400px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.2);transform:translateY(20px);transition:transform .25s;text-align:center;}
+.reset-overlay.show .reset-box{transform:translateY(0);}
+.reset-box h3{font-size:18px;font-weight:700;margin-bottom:6px;}
+.reset-box p{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.reset-step{display:none;}
+.reset-step.active{display:block;}
+.reset-box input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px;transition:border .2s;text-align:center;}
+.reset-box input:focus{border-color:var(--blue);}
+.reset-err{font-size:12px;color:var(--red);margin-bottom:10px;display:none;}
+.reset-ok{font-size:12px;color:var(--green);margin-bottom:10px;display:none;}
+.reset-btns{display:flex;gap:8px;margin-top:4px;}
+.reset-btn-cancel{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.reset-btn-ok{flex:1;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.codigo-input{font-family:'DM Mono',monospace!important;font-size:24px!important;letter-spacing:8px;text-align:center;}
+
+.login-back{display:block;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:none;}
+.login-back:hover{color:var(--blue);}
+
+header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-size:14px;font-weight:600;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;}
+.logo span{color:var(--cyan);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.btn-header{border-radius:8px;padding:6px 14px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-reload{background:var(--blue);color:#fff;}
+.btn-senha{background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);}
+.btn-senha:hover{background:rgba(255,255,255,0.15);}
+.btn-sair{background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);}
+.btn-home{background:rgba(0,194,203,0.15);color:var(--cyan);border:1px solid rgba(0,194,203,0.3);text-decoration:none;border-radius:8px;padding:6px 14px;font-size:13px;}
+
+.aviso-gerente{background:var(--purple-bg);border:1.5px solid var(--purple-border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;font-size:13px;color:var(--blue);display:flex;align-items:center;gap:10px;}
+
+.container{max-width:1100px;margin:32px auto;padding:0 24px;}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:20px;box-shadow:var(--shadow);}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.stat-value{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;margin-top:4px;}
+.stat-card.analise .stat-value{color:var(--blue);}
+.stat-card.aprovado .stat-value{color:var(--green);}
+
+.table-wrap{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-title{font-size:14px;font-weight:600;}
+.search-box{border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:220px;transition:border .2s;}
+.search-box:focus{border-color:var(--blue);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#f8faff;}
+tbody td{padding:13px 16px;vertical-align:middle;}
+.num-col{font-family:'DM Mono',monospace;font-size:12px;color:var(--blue);font-weight:500;}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge.em-analise{background:var(--purple-bg);color:var(--blue);border:1px solid var(--purple-border);}
+.badge.Aprovado{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.badge.Reprovado{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.empty-state{text-align:center;padding:48px;color:var(--muted);}
+.loading{text-align:center;padding:48px;color:var(--muted);}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,0.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.25);transform:translateY(20px);transition:transform .25s;}
+.modal-overlay.show .modal-box{transform:translateY(0);}
+.modal-head{padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;}
+.modal-head-title{font-size:17px;font-weight:700;}
+.modal-num{font-family:'DM Mono',monospace;font-size:13px;color:var(--blue);margin-top:2px;}
+.modal-close{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:20px 28px 28px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.detail-item{background:var(--bg);border-radius:8px;padding:12px;}
+.detail-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.detail-value{font-size:13px;font-weight:500;}
+.detail-item.full{grid-column:1/-1;}
+.just-box{background:var(--bg);border-radius:8px;padding:14px;font-size:13px;line-height:1.7;margin-bottom:20px;white-space:pre-wrap;}
+.resposta-section{border-top:1px solid var(--border);padding-top:20px;}
+.resposta-title{font-size:13px;font-weight:700;margin-bottom:12px;}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.status-opt{border:2px solid var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:600;}
+.status-opt:hover{border-color:var(--blue);}
+.status-opt.sel-Aprovado{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.status-opt.sel-Reprovado{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+.resposta-area{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;min-height:90px;outline:none;margin-bottom:14px;transition:border .2s;}
+.resposta-area:focus{border-color:var(--blue);}
+.btn-enviar-resp{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.btn-enviar-resp:disabled{background:var(--muted);cursor:not-allowed;}
+
+.senha-box{background:#fff;border-radius:20px;padding:32px 28px;max-width:380px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.25);transform:translateY(20px);transition:transform .25s;}
+.modal-overlay.show .senha-box{transform:translateY(0);}
+.senha-box h3{font-size:18px;font-weight:700;margin-bottom:6px;}
+.senha-box p{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.senha-box input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px;transition:border .2s;}
+.senha-box input:focus{border-color:var(--blue);}
+.senha-err{font-size:12px;color:var(--red);margin-bottom:10px;display:none;}
+.senha-ok{font-size:12px;color:var(--green);margin-bottom:10px;display:none;}
+.senha-btns{display:flex;gap:8px;}
+.btn-cancel{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.btn-save{flex:1;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+
+.g-modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,0.45);backdrop-filter:blur(3px);z-index:999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.g-modal-overlay.show{opacity:1;pointer-events:all;}
+.g-modal-box{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2);transform:translateY(20px);transition:transform .25s;}
+.g-modal-overlay.show .g-modal-box{transform:translateY(0);}
+.g-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.g-icon svg{width:26px;height:26px;stroke-width:2.5;fill:none;}
+.g-icon.s{background:#dcfce7;} .g-icon.s svg{stroke:var(--green);}
+.g-icon.e{background:#fef2f2;} .g-icon.e svg{stroke:var(--red);}
+.g-title{font-size:16px;font-weight:700;margin-bottom:8px;}
+.g-msg{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.g-btn{border:none;border-radius:8px;padding:10px 32px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.g-btn.s{background:var(--green);color:#fff;}
+.g-btn.e{background:var(--red);color:#fff;}
+
+
+/* ── MODO AUSENTE ── */
+.btn-ausente-on{background:var(--red)!important;color:#fff!important;border-color:var(--red)!important;animation:pulse-ausente 2s infinite;}
+@keyframes pulse-ausente{0%,100%{opacity:1;}50%{opacity:0.7;}}
+.ausente-banner{background:var(--red-bg);border:1.5px solid var(--red-border);border-radius:8px;padding:10px 16px;font-size:12px;color:var(--red);margin-bottom:16px;display:none;text-align:center;}
+.ausente-banner.show{display:block;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.container{animation:fadeUp .4s ease;}
+@media(max-width:768px){.stats{grid-template-columns:1fr;}.detail-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="login-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div class="login-title">Central de Aprovações</div>
+    <div class="login-sub">Cetec Palmas — Pedidos</div>
+    <input type="text" id="usuarioInput" placeholder="Usuário" onkeydown="if(event.key==='Enter')entrar()">
+    <input type="password" id="senhaInput" placeholder="Senha" onkeydown="if(event.key==='Enter')entrar()">
+    <button onclick="entrar()">Entrar</button>
+    <div class="login-err" id="loginErr">Usuário ou senha incorretos.</div>
+    <a class="login-back" href="index.html">← Voltar ao formulário</a>
+    <a class="login-back" href="#" onclick="abrirReset(event)" style="color:var(--blue);margin-top:4px;">Esqueci minha senha</a>
+  </div>
+</div>
+
+<div id="dashboard" style="display:none;">
+  <header>
+    <div class="logo">
+      <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      Cetec Palmas — <span style="margin-left:4px;">Central de Aprovações</span>
+    </div>
+    <div class="header-right">
+      <a class="btn-home" href="index.html">🏠</a>
+      <button class="btn-header btn-reload" id="timerBadge" onclick="this.blur();carregarDados().then(()=>iniciarAutoRefresh())">↻ Atualizar (30s)</button>
+      <button class="btn-header btn-senha" onclick="abrirTrocaSenha()">🔑 Alterar Senha</button>
+      <button class="btn-header btn-senha" id="btnAusente" onclick="toggleAusente()">🏃 Modo Ausente</button>
+      <button class="btn-header btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="ausente-banner" id="ausenteBanner">🏃 Você está em <strong>Modo Ausente</strong>. Os pedidos serão automaticamente escalados para o próximo aprovador.</div>
+    <div class="aviso-gerente" id="avisoGerente">🔐 Você está visualizando apenas as solicitações que aguardam sua autorização (<strong>Em Análise</strong>).</div>
+
+    <div class="stats">
+      <div class="stat-card analise"><div class="stat-label">Aguardando Autorização</div><div class="stat-value" id="cnt-analise">—</div></div>
+      <div class="stat-card aprovado"><div class="stat-label">Autorizados por você</div><div class="stat-value" id="cnt-aprovado">—</div></div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">Solicitações em Análise</div>
+        <input class="search-box" placeholder="🔍 Buscar..." autocomplete="off" oninput="buscar(this.value)">
+      </div>
+      <div id="tabelaWrap"><div class="loading">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHE -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><div class="modal-head-title" id="m-equip">—</div><div class="modal-num" id="m-num">—</div></div>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-label">Solicitante</div><div class="detail-value" id="m-nome">—</div></div>
+        <div class="detail-item"><div class="detail-label">E-mail</div><div class="detail-value" id="m-email">—</div></div>
+        <div class="detail-item"><div class="detail-label">Setor</div><div class="detail-value" id="m-setor">—</div></div>
+        <div class="detail-item"><div class="detail-label">Urgência</div><div class="detail-value" id="m-urg">—</div></div>
+        <div class="detail-item"><div class="detail-label">Tempo de Uso</div><div class="detail-value" id="m-tempo">—</div></div>
+        <div class="detail-item"><div class="detail-label">Data da Solicitação</div><div class="detail-value" id="m-data">—</div></div>
+        <div class="detail-item full"><div class="detail-label">Justificativa</div></div>
+      </div>
+      <div class="just-box" id="m-just">—</div>
+      <div class="resposta-section">
+        <div class="resposta-title">Sua Decisão</div>
+        <div class="status-grid">
+          <div class="status-opt" onclick="selecionarStatus(this,'Aprovado')">✅ Autorizar</div>
+          <div class="status-opt" onclick="selecionarStatus(this,'Reprovado')">❌ Reprovar</div>
+        </div>
+        <textarea class="resposta-area" id="respostaTexto" placeholder="Justifique sua decisão..."></textarea>
+        <button class="btn-enviar-resp" id="btnResponder" onclick="enviarResposta()">📨 Confirmar Decisão</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SENHA -->
+<div class="modal-overlay" id="senhaOverlay" onclick="fecharSenha(event)">
+  <div class="senha-box">
+    <h3>🔑 Alterar Senha</h3>
+    <p>Usuário: <strong id="senhaUsuario">—</strong></p>
+    <input type="password" id="senhaAtual" placeholder="Senha atual">
+    <input type="password" id="senhaNova" placeholder="Nova senha">
+    <input type="password" id="senhaConfirm" placeholder="Confirmar nova senha">
+    <div class="senha-err" id="senhaErr">—</div>
+    <div class="senha-ok" id="senhaOk">Senha alterada com sucesso!</div>
+    <div class="senha-btns">
+      <button class="btn-cancel" onclick="fecharSenha()">Cancelar</button>
+      <button class="btn-save" onclick="trocarSenha()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GLOBAL -->
+<div class="g-modal-overlay" id="gModalOverlay" onclick="fecharGModal(event)">
+  <div class="g-modal-box">
+    <div class="g-icon s" id="gIcon"></div>
+    <div class="g-title" id="gTitle">—</div>
+    <div class="g-msg" id="gMsg">—</div>
+    <button class="g-btn s" id="gBtn" onclick="fecharGModal()">OK</button>
+  </div>
+</div>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(
+  'https://lkivpaalalcqxctqhpip.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxraXZwYWFsYWxjcXhjdHFocGlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzYzMDIsImV4cCI6MjA5NDcxMjMwMn0.uqfAlC1jnOxMRJoTj1Rczy_MnQcER8C8OaiW0-puk8s'
+);
+
+const EMAILJS_KEY='bLFbU7GNf8doxB-tQ', EMAILJS_SVC='service_c7tq8jl', EMAILJS_TPL='modelo_mobile';
+emailjs.init(EMAILJS_KEY);
+
+let currentUser=null, todasSolicitacoes=[], buscaAtual='', solAtual=null, statusSelecionado='';
+let contadorAnterior=-1, timer30=30, timerInterval=null;
+
+async function entrar() {
+  const rl = verificarRateLimit();
+  if (rl !== true) {
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = typeof rl === 'string' && rl.startsWith('bloqueado')
+      ? `Muitas tentativas. Aguarde ${rl.split(':')[1]} minuto(s).`
+      : 'Muitas tentativas. Aguarde 15 minutos.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const usuario=document.getElementById('usuarioInput').value.trim();
+  const senha=document.getElementById('senhaInput').value;
+  const { data, error } = await sb.from('usuarios').select('*').eq('usuario',usuario).eq('senha',senha).eq('role','gerente').single();
+  if(data&&!error){
+    currentUser=data;
+    limparRateLimit(); sessionStorage.setItem('gerente_auth',JSON.stringify({id:data.id,usuario:data.usuario,nome:data.nome,role:data.role}));
+    iniciarDashboard(); iniciarMonitorSessao();
+  } else {
+    registrarTentativaFalha();
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('senhaInput').value='';
+  }
+}
+
+function iniciarDashboard() {
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('senhaUsuario').textContent=currentUser.usuario;
+
+  // Personaliza aviso conforme perfil
+  if (currentUser.usuario === 'wilmarcorreia') {
+    document.getElementById('avisoGerente').innerHTML = '📚 Você está visualizando apenas as solicitações do setor <strong>Docentes</strong> que aguardam sua autorização.';
+  }
+
+  solicitarPermissaoNotificacao();
+  carregarModoAusente();
+  carregarDados();
+  iniciarAutoRefresh();
+}
+
+function sair() { clearInterval(timerInterval); sessionStorage.removeItem('gerente_auth'); location.reload(); }
+
+const saved=sessionStorage.getItem('gerente_auth');
+if(saved){ try{ currentUser=JSON.parse(saved); document.getElementById('senhaUsuario').textContent=currentUser.usuario; iniciarDashboard(); }catch(_){ sessionStorage.removeItem('gerente_auth'); } }
+
+function solicitarPermissaoNotificacao() { if('Notification' in window&&Notification.permission==='default') Notification.requestPermission(); }
+function notificar(qtd,pedido) {
+  if('Notification' in window&&Notification.permission==='granted'){
+    const n=new Notification(`🔐 ${qtd>1?qtd+' itens':'Item'} aguardando sua autorização`,{body:`${pedido.nome} — ${pedido.equipamento}`,tag:`gerente-${Date.now()}`});
+    n.onclick=()=>{window.focus();n.close();}; setTimeout(()=>n.close(),8000);
+  }
+}
+
+function iniciarAutoRefresh() {
+  clearInterval(timerInterval); timer30=30; atualizarTimerBadge();
+  timerInterval=setInterval(()=>{ timer30--; atualizarTimerBadge(); if(timer30<=0){timer30=30;silentRefresh();} },1000);
+}
+function atualizarTimerBadge(){ const el=document.getElementById('timerBadge'); if(el) el.textContent=`↻ Atualizar (${timer30}s)`; }
+async function silentRefresh() {
+  const isWilmar = currentUser.usuario === 'wilmarcorreia';
+  let q = sb.from('solicitacoes').select('*').eq('status','Em análise').order('created_at',{ascending:false});
+  if (isWilmar) q = q.eq('setor','Docentes');
+  else q = q.neq('setor','Docentes');
+  const { data } = await q;
+  if(!data) return;
+  if(contadorAnterior>=0&&data.length>contadorAnterior) notificar(data.length-contadorAnterior,data[0]);
+  contadorAnterior=data.length;
+  todasSolicitacoes=data;
+  atualizarStats(); renderTabela();
+}
+
+async function carregarDados() {
+  document.getElementById('tabelaWrap').innerHTML='<div class="loading">Carregando...</div>';
+
+  // Wilmar vê só Docentes, Neuzely vê os demais setores
+  const isWilmar = currentUser.usuario === 'wilmarcorreia';
+  let query = sb.from('solicitacoes').select('*').eq('status','Em análise').order('created_at',{ascending:false});
+  if (isWilmar) {
+    query = query.eq('setor','Docentes');
+  } else {
+    query = query.neq('setor','Docentes');
+  }
+
+  const { data:analise } = await query;
+  const { count:aprovados } = await sb.from('solicitacoes').select('*',{count:'exact',head:true}).eq('status','Aprovado').eq('respondido_por',currentUser.nome);
+  todasSolicitacoes=analise||[];
+  contadorAnterior=todasSolicitacoes.length;
+  document.getElementById('cnt-analise').textContent=todasSolicitacoes.length;
+  document.getElementById('cnt-aprovado').textContent=aprovados||0;
+  timer30=30; renderTabela();
+}
+
+function atualizarStats() {
+  document.getElementById('cnt-analise').textContent=todasSolicitacoes.length;
+}
+
+function buscar(v){ buscaAtual=v.toLowerCase(); renderTabela(); }
+
+function renderTabela() {
+  const dados=todasSolicitacoes.filter(r=>!buscaAtual||(r.nome||'').toLowerCase().includes(buscaAtual)||(r.setor||'').toLowerCase().includes(buscaAtual)||(r.equipamento||'').toLowerCase().includes(buscaAtual));
+  if(!dados.length){ document.getElementById('tabelaWrap').innerHTML='<div class="empty-state">✅ Nenhum item aguardando autorização.</div>'; return; }
+  const rows=dados.map(r=>`
+    <tr data-numero="${r.numero}" style="cursor:pointer;">
+      <td class="num-col">${r.numero||'—'}</td>
+      <td>${r.data||'—'}</td>
+      <td><strong>${sanitize(r.nome)||'—'}</strong><br><span style="color:var(--muted);font-size:12px;">${sanitize(r.setor)||''}</span></td>
+      <td>${sanitize(r.equipamento)||'—'}</td>
+      <td>${r.urgencia||'—'}</td>
+      <td><span class="badge em-analise">Em Análise</span></td>
+    </tr>`).join('');
+  document.getElementById('tabelaWrap').innerHTML=`<table><thead><tr><th>Protocolo</th><th>Data</th><th>Solicitante</th><th>Equipamento</th><th>Urgência</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// Event delegation único no tabelaWrap — persiste entre re-renderizações
+document.getElementById('tabelaWrap').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-numero]');
+  if (tr) abrirModal(tr.dataset.numero);
+});
+
+function abrirModal(numero) {
+  const r=todasSolicitacoes.find(x=>x.numero===numero);
+  if(!r) return;
+  solAtual=r; statusSelecionado='';
+  document.getElementById('m-equip').textContent=r.equipamento||'—';
+  document.getElementById('m-num').textContent=r.numero||'—';
+  document.getElementById('m-nome').textContent=r.nome||'—';
+  document.getElementById('m-email').textContent=r.email||'—';
+  document.getElementById('m-setor').textContent=r.setor||'—';
+  document.getElementById('m-urg').textContent=r.urgencia||'—';
+  document.getElementById('m-tempo').textContent=r.tempo_uso||'—';
+  document.getElementById('m-data').textContent=r.data||'—';
+  document.getElementById('m-just').textContent=r.justificativa||'—';
+
+  const finalizado = r.status === 'Aprovado' || r.status === 'Reprovado';
+  const secaoResposta = document.querySelector('.resposta-section');
+  if(finalizado) {
+    secaoResposta.innerHTML = `
+      <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:16px;text-align:center;color:var(--muted);font-size:13px;">
+        🔒 Esta solicitação já foi <strong style="color:${r.status==='Aprovado'?'var(--green)':'var(--red)'};">${r.status}</strong> por <strong>${sanitize(r.respondido_por)||'—'}</strong> e não pode ser alterada.
+      </div>`;
+  } else {
+    secaoResposta.innerHTML = `
+      <div class="resposta-title">Sua Decisão</div>
+      <div class="status-grid">
+        <div class="status-opt" onclick="selecionarStatus(this,'Aprovado')">✅ Autorizar</div>
+        <div class="status-opt" onclick="selecionarStatus(this,'Reprovado')">❌ Reprovar</div>
+      </div>
+      <textarea class="resposta-area" id="respostaTexto" placeholder="Justifique sua decisão..."></textarea>
+      <button class="btn-enviar-resp" id="btnResponder" onclick="enviarResposta()">📨 Confirmar Decisão</button>`;
+    // Só acessa respostaTexto após reconstruir o HTML
+    document.getElementById('respostaTexto').value='';
+  }
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function fecharModal(e){ if(!e||e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('show'); }
+function selecionarStatus(el,status) {
+  document.querySelectorAll('.status-opt').forEach(e=>e.className='status-opt');
+  el.classList.add(status==='Aprovado'?'sel-Aprovado':'sel-Reprovado');
+  statusSelecionado=status;
+}
+
+async function enviarResposta() {
+  if(!statusSelecionado){ showG('e','Atenção','Selecione Autorizar ou Reprovar antes de confirmar.'); return; }
+  const resposta=document.getElementById('respostaTexto').value.trim();
+  if(!resposta){ showG('e','Atenção','Justifique sua decisão antes de confirmar.'); return; }
+  const btn=document.getElementById('btnResponder');
+  btn.disabled=true; btn.textContent='Enviando...';
+  try {
+    const { error } = await sb.from('solicitacoes').update({
+      status:statusSelecionado, resposta, respondido_por:currentUser.nome, data_resposta:new Date().toISOString()
+    }).eq('numero',solAtual.numero);
+    if(error) throw error;
+    await emailjs.send(EMAILJS_SVC,EMAILJS_TPL,{
+      name:'Gerência — Cetec Palmas', to_email:solAtual.email, email_solicitante:solAtual.email,
+      numero_solicitacao:solAtual.numero, equipamento:solAtual.equipamento,
+      message:`Olá, ${solAtual.nome}!\n\nSua solicitação foi analisada pela Gerência da Cetec Palmas.\n\n📋 Protocolo: ${solAtual.numero}\n📦 Equipamento: ${solAtual.equipamento}\n📊 Status: ${statusSelecionado}\n\n💬 Decisão da Gerência:\n${resposta}\n\nAtenciosamente,\nGerência — Cetec Palmas`
+    });
+    showG('s','Decisão Registrada!',`Status atualizado para <strong>${statusSelecionado}</strong>. O solicitante foi notificado.`);
+    fecharModal(); carregarDados();
+  } catch(err) {
+    showG('e','Erro',`Falha ao registrar: ${err?.message||err}`);
+  } finally {
+    btn.disabled=false; btn.textContent='📨 Confirmar Decisão';
+  }
+}
+
+function abrirTrocaSenha(){ document.getElementById('senhaAtual').value=''; document.getElementById('senhaNova').value=''; document.getElementById('senhaConfirm').value=''; document.getElementById('senhaErr').style.display='none'; document.getElementById('senhaOk').style.display='none'; document.getElementById('senhaOverlay').classList.add('show'); }
+function fecharSenha(e){ if(!e||e.target===document.getElementById('senhaOverlay')) document.getElementById('senhaOverlay').classList.remove('show'); }
+
+async function trocarSenha() {
+  const atual=document.getElementById('senhaAtual').value;
+  const nova=document.getElementById('senhaNova').value;
+  const confirm=document.getElementById('senhaConfirm').value;
+  const errEl=document.getElementById('senhaErr'), okEl=document.getElementById('senhaOk');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(!atual||!nova||!confirm){ errEl.textContent='Preencha todos os campos.'; errEl.style.display='block'; return; }
+  if(nova!==confirm){ errEl.textContent='As senhas não coincidem.'; errEl.style.display='block'; return; }
+  if(nova.length<6){ errEl.textContent='Mínimo de 6 caracteres.'; errEl.style.display='block'; return; }
+  const { data:user } = await sb.from('usuarios').select('*').eq('usuario',currentUser.usuario).eq('senha',atual).single();
+  if(!user){ errEl.textContent='Senha atual incorreta.'; errEl.style.display='block'; return; }
+  const { error } = await sb.from('usuarios').update({senha:nova}).eq('usuario',currentUser.usuario);
+  if(error){ errEl.textContent='Erro ao salvar.'; errEl.style.display='block'; return; }
+  okEl.style.display='block';
+  setTimeout(()=>fecharSenha(),2000);
+}
+
+function showG(tipo,titulo,msg){ document.getElementById('gIcon').className=`g-icon ${tipo}`; document.getElementById('gIcon').innerHTML=tipo==='s'?'<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>':'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'; document.getElementById('gTitle').textContent=titulo; document.getElementById('gMsg').innerHTML=msg; document.getElementById('gBtn').className=`g-btn ${tipo}`; document.getElementById('gModalOverlay').classList.add('show'); }
+function fecharGModal(e){ if(!e||e.target===document.getElementById('gModalOverlay')) document.getElementById('gModalOverlay').classList.remove('show'); }
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharSenha({target:document.getElementById('senhaOverlay')}); fecharGModal({target:document.getElementById('gModalOverlay')}); } if(e.key==='Enter'&&document.getElementById('loginWrap').style.display!=='none') entrar(); });
+</script>
+
+<!-- MODAL RECUPERAÇÃO DE SENHA -->
+<div class="reset-overlay" id="resetOverlay" onclick="fecharReset(event)">
+  <div class="reset-box">
+    <div class="reset-step active" id="resetStep1">
+      <h3>🔑 Recuperar Senha</h3>
+      <p>Informe seu usuário. Enviaremos um código de verificação para o e-mail cadastrado.</p>
+      <input type="text" id="reset_usuario" placeholder="Seu usuário" autocomplete="off">
+      <div class="reset-err" id="reset_err1">—</div>
+      <div class="reset-btns">
+        <button class="reset-btn-cancel" onclick="fecharReset()">Cancelar</button>
+        <button class="reset-btn-ok" onclick="enviarCodigoReset()">Enviar código</button>
+      </div>
+    </div>
+    <div class="reset-step" id="resetStep2">
+      <h3>📨 Código enviado!</h3>
+      <p id="reset_email_hint">Verifique seu e-mail e digite o código de 6 dígitos.<br><small>O código expira em <span id="resetTimer">10:00</span></small></p>
+      <input type="text" id="reset_codigo" class="codigo-input" placeholder="000000" maxlength="6" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <div class="reset-err" id="reset_err2">—</div>
+      <div class="reset-btns">
+        <button class="reset-btn-cancel" onclick="fecharReset()">Cancelar</button>
+        <button class="reset-btn-ok" onclick="validarCodigoReset()">Validar</button>
+      </div>
+    </div>
+    <div class="reset-step" id="resetStep3">
+      <h3>🔐 Nova Senha</h3>
+      <p>Digite e confirme sua nova senha.</p>
+      <input type="password" id="reset_nova" placeholder="Nova senha">
+      <input type="password" id="reset_confirma" placeholder="Confirmar nova senha">
+      <div class="reset-err" id="reset_err3">—</div>
+      <div class="reset-ok" id="reset_ok3">Senha alterada com sucesso!</div>
+      <div class="reset-btns">
+        <button class="reset-btn-cancel" onclick="fecharReset()">Cancelar</button>
+        <button class="reset-btn-ok" onclick="salvarNovaSenha()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+
+// ── MODO AUSENTE ──
+let modoAusenteAtivo = false;
+
+async function carregarModoAusente() {
+  const { data } = await sb.from('modo_ausente').select('*').eq('usuario', currentUser.usuario).single();
+  if (data) {
+    modoAusenteAtivo = data.ativo;
+    atualizarBtnAusente();
+  }
+}
+
+function atualizarBtnAusente() {
+  const btn = document.getElementById('btnAusente');
+  const banner = document.getElementById('ausenteBanner');
+  if (modoAusenteAtivo) {
+    btn.textContent = '✅ Ausente — Desativar';
+    btn.classList.add('btn-ausente-on');
+    banner.classList.add('show');
+  } else {
+    btn.textContent = '🏃 Modo Ausente';
+    btn.classList.remove('btn-ausente-on');
+    banner.classList.remove('show');
+  }
+}
+
+async function toggleAusente() {
+  modoAusenteAtivo = !modoAusenteAtivo;
+  await sb.from('modo_ausente').update({
+    ativo: modoAusenteAtivo,
+    ativado_em: modoAusenteAtivo ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString()
+  }).eq('usuario', currentUser.usuario);
+  atualizarBtnAusente();
+  showG(
+    modoAusenteAtivo ? 'e' : 's',
+    modoAusenteAtivo ? 'Modo Ausente Ativado' : 'Modo Ausente Desativado',
+    modoAusenteAtivo
+      ? 'Os pedidos serão escalados automaticamente para o próximo aprovador.'
+      : 'Você voltou a receber e deliberar pedidos normalmente.'
+  );
+}
+
+// ── RECUPERAÇÃO DE SENHA ──
+let resetUsuarioAtual = null;
+let resetCodigoId = null;
+let resetTimerInterval = null;
+
+function abrirReset(e) {
+  e.preventDefault();
+  document.getElementById('reset_usuario').value = '';
+  document.getElementById('reset_err1').style.display = 'none';
+  ['resetStep1','resetStep2','resetStep3'].forEach(id => document.getElementById(id).className='reset-step');
+  document.getElementById('resetStep1').classList.add('active');
+  document.getElementById('resetOverlay').classList.add('show');
+}
+
+function fecharReset(e) {
+  if (!e || e.target === document.getElementById('resetOverlay')) {
+    document.getElementById('resetOverlay').classList.remove('show');
+    clearInterval(resetTimerInterval);
+  }
+}
+
+async function enviarCodigoReset() {
+  const usuario = document.getElementById('reset_usuario').value.trim();
+  const errEl = document.getElementById('reset_err1');
+  errEl.style.display = 'none';
+  if (!usuario) { errEl.textContent = 'Informe seu usuário.'; errEl.style.display = 'block'; return; }
+  const { data: user } = await sb.from('usuarios').select('*').eq('usuario', usuario).single();
+  if (!user) { errEl.textContent = 'Usuário não encontrado.'; errEl.style.display = 'block'; return; }
+  const emailDestino = usuario + '@sistemafieto.com.br';
+  resetUsuarioAtual = usuario;
+  const codigo = String(Math.floor(100000 + Math.random() * 900000));
+  const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const { data: codReg } = await sb.from('codigos_reset').insert({ usuario, codigo, expira_em: expira }).select().single();
+  resetCodigoId = codReg?.id;
+  await emailjs.send(EMAILJS_SVC, EMAILJS_TPL, {
+    name: 'Pedidos — Cetec Palmas', to_email: emailDestino, email_solicitante: emailDestino,
+    numero_solicitacao: codigo, equipamento: 'Recuperação de senha',
+    message: `Olá, ${user.nome}!\n\nSeu código de verificação para redefinição de senha é:\n\n${codigo}\n\nEste código expira em 10 minutos e só pode ser usado uma vez.\n\nSe você não solicitou a redefinição, ignore este e-mail.\n\nPedidos — Cetec Palmas`
+  });
+  document.getElementById('reset_email_hint').innerHTML = `Verifique o e-mail <strong>${emailDestino}</strong> e digite o código de 6 dígitos.<br><small>O código expira em <span id="resetTimer">10:00</span></small>`;
+  document.getElementById('reset_codigo').value = '';
+  document.getElementById('reset_err2').style.display = 'none';
+  document.getElementById('resetStep1').className = 'reset-step';
+  document.getElementById('resetStep2').className = 'reset-step active';
+  let segundos = 600;
+  clearInterval(resetTimerInterval);
+  resetTimerInterval = setInterval(() => {
+    segundos--;
+    const m = String(Math.floor(segundos/60)).padStart(2,'0');
+    const s = String(segundos%60).padStart(2,'0');
+    const el = document.getElementById('resetTimer');
+    if (el) el.textContent = `${m}:${s}`;
+    if (segundos <= 0) { clearInterval(resetTimerInterval); if(el) el.textContent = 'Expirado'; }
+  }, 1000);
+}
+
+async function validarCodigoReset() {
+  const codigo = document.getElementById('reset_codigo').value.trim();
+  const errEl = document.getElementById('reset_err2');
+  errEl.style.display = 'none';
+  if (codigo.length !== 6) { errEl.textContent = 'Digite o código de 6 dígitos.'; errEl.style.display = 'block'; return; }
+  const agora = new Date().toISOString();
+  const { data: reg } = await sb.from('codigos_reset').select('*')
+    .eq('usuario', resetUsuarioAtual).eq('codigo', codigo).eq('usado', false).gte('expira_em', agora).single();
+  if (!reg) { errEl.textContent = 'Código inválido ou expirado. Tente novamente.'; errEl.style.display = 'block'; return; }
+  resetCodigoId = reg.id;
+  clearInterval(resetTimerInterval);
+  document.getElementById('reset_nova').value = '';
+  document.getElementById('reset_confirma').value = '';
+  document.getElementById('reset_err3').style.display = 'none';
+  document.getElementById('reset_ok3').style.display = 'none';
+  document.getElementById('resetStep2').className = 'reset-step';
+  document.getElementById('resetStep3').className = 'reset-step active';
+}
+
+async function salvarNovaSenha() {
+  const nova = document.getElementById('reset_nova').value;
+  const confirma = document.getElementById('reset_confirma').value;
+  const errEl = document.getElementById('reset_err3');
+  const okEl = document.getElementById('reset_ok3');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  if (!nova || !confirma) { errEl.textContent = 'Preencha os dois campos.'; errEl.style.display = 'block'; return; }
+  if (nova !== confirma) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
+  if (nova.length < 6) { errEl.textContent = 'Mínimo de 6 caracteres.'; errEl.style.display = 'block'; return; }
+  await sb.from('usuarios').update({ senha: nova }).eq('usuario', resetUsuarioAtual);
+  await sb.from('codigos_reset').update({ usado: true }).eq('id', resetCodigoId);
+  okEl.style.display = 'block';
+  setTimeout(() => fecharReset({ target: document.getElementById('resetOverlay') }), 2000);
+}
+
+</script>
+</body>
+</html>

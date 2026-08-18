@@ -464,6 +464,7 @@ const EMAILJS_SERVICE_ID = 'service_c7tq8jl';
 const TEMPLATE_GESTOR    = 'modelo_mobile';
 const TEMPLATE_USUARIO   = 'modelo_mobile';
 const EMAIL_GESTOR       = 'andressonmouzinho@sistemafieto.com.br';
+const EMAIL_ADMINISTRATIVO = 'andressonmds1996@gmail.com'; // TEMPORÁRIO — trocar pelo e-mail definitivo do Administrativo
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
 // ── ESTADO ──
@@ -540,7 +541,7 @@ function toggleEq(card, type, emoji) {
   if (idx >= 0) { selectedItems.splice(idx,1); card.classList.remove('selected'); }
   else {
     if (type === 'Auditório') {
-      selectedItems.push({type, emoji, qty:1, spec:'', dias:[{data:'', inicio:'', termino:''}]});
+      selectedItems.push({type, emoji, qty:1, spec:'', dias:[{data:'', inicio:'', termino:''}], extras:{coffee:false, decoracao:false, cadeiras:false}, participantes:''});
     } else {
       selectedItems.push({type, emoji, qty:1, spec:''});
     }
@@ -577,6 +578,7 @@ function renderCart() {
             ${di>0?`<button onclick="removerDiaAuditorio(${i},${di})" style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--muted);font-size:13px;">✕</button>`:'<span></span>'}
           </div>
         </div>`).join('');
+      const extras = item.extras || {coffee:false, decoracao:false, cadeiras:false};
       return `<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div class="cart-item-nome">👥 Auditório</div>
@@ -584,6 +586,28 @@ function renderCart() {
         </div>
         ${diasHTML}
         <button onclick="adicionarDiaAuditorio(${i})" style="width:100%;padding:8px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;font-size:13px;color:var(--blue);cursor:pointer;margin-top:4px;">+ Adicionar outro dia</button>
+
+        <div style="margin-top:14px;">
+          <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;">Necessidades Adicionais</label>
+          <div style="display:flex;flex-wrap:wrap;gap:14px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text);cursor:pointer;">
+              <input type="checkbox" ${extras.coffee?'checked':''} onchange="selectedItems[${i}].extras.coffee=this.checked" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;"> ☕ Coffee-break
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text);cursor:pointer;">
+              <input type="checkbox" ${extras.decoracao?'checked':''} onchange="selectedItems[${i}].extras.decoracao=this.checked" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;"> 🎨 Decoração
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text);cursor:pointer;">
+              <input type="checkbox" ${extras.cadeiras?'checked':''} onchange="selectedItems[${i}].extras.cadeiras=this.checked" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;"> 🪑 Cadeiras e Mesas
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Nº de participantes</label>
+          <input type="number" min="1" value="${item.participantes||''}" placeholder="Ex.: 40"
+            oninput="selectedItems[${i}].participantes=this.value" style="font-size:12px;padding:7px 8px;max-width:140px;">
+        </div>
+
         <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:10px 12px;font-size:12px;color:#78350f;margin-top:12px;">
           🚫 Lembrete: não é permitida a entrada de bebidas ou alimentos no auditório. Contamos com a sua colaboração pra manter o espaço em ordem! 😊
         </div>
@@ -745,7 +769,13 @@ function preencherRevisao() {
   document.getElementById('rv_setor').textContent=document.getElementById('f_setor').value;
   document.getElementById('rv_unidade').textContent=document.getElementById('f_unidade').value;
   document.getElementById('rv_ramal').textContent=document.getElementById('f_ramal').value||'—';
-  document.getElementById('rv_eq').innerHTML=selectedItems.map(i=>`<div>${i.emoji} <strong>${i.type}</strong> — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}</div>`).join('');
+  document.getElementById('rv_eq').innerHTML=selectedItems.map(i=>{
+    if(i.type==='Auditório'){
+      const ex=i.extras||{}; const extrasTxt=[ex.coffee?'☕ Coffee-break':null, ex.decoracao?'🎨 Decoração':null, ex.cadeiras?'🪑 Cadeiras e Mesas':null].filter(Boolean).join(', ');
+      return `<div>${i.emoji} <strong>${i.type}</strong>${i.participantes?` — ${i.participantes} participante(s)`:''}${extrasTxt?`<br><span style="font-weight:400;font-size:12px;color:var(--muted);">${extrasTxt}</span>`:''}</div>`;
+    }
+    return `<div>${i.emoji} <strong>${i.type}</strong> — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}</div>`;
+  }).join('');
   document.getElementById('rv_urg').textContent=selectedUrgEmoji+' '+selectedUrg;
   document.getElementById('rv_tempo').textContent=tempoUso||'—';
   const dataR=document.getElementById('f_data_retirada').value;
@@ -766,8 +796,19 @@ async function enviarSolicitacao() {
   const ramal=document.getElementById('f_ramal').value;
   const just=document.getElementById('f_justificativa').value;
   const dataHora=new Date().toLocaleString('pt-BR');
-  const itensLista=selectedItems.map(i=>`• ${i.emoji} ${i.type} — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}`).join('\n');
+  const itensLista=selectedItems.map(i=>{
+    if(i.type==='Auditório'){
+      const ex=i.extras||{}; const extrasTxt=[ex.coffee?'☕ Coffee-break':null, ex.decoracao?'🎨 Decoração':null, ex.cadeiras?'🪑 Cadeiras e Mesas':null].filter(Boolean).join(', ');
+      return `• ${i.emoji} ${i.type}${i.participantes?` — ${i.participantes} participante(s)`:''}${extrasTxt?` — Necessidades: ${extrasTxt}`:''}`;
+    }
+    return `• ${i.emoji} ${i.type} — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}`;
+  }).join('\n');
   const itensResumido=selectedItems.map(i=>`${i.emoji} ${i.type} x${i.qty}`).join(', ');
+
+  // Auditório: se algum extra marcado, envia cópia ao Administrativo
+  const auditItem = selectedItems.find(i=>i.type==='Auditório');
+  const auditExtras = auditItem?.extras || {};
+  const precisaAdministrativo = auditItem && (auditExtras.coffee || auditExtras.decoracao || auditExtras.cadeiras);
 
   try {
     // Salva no Supabase
@@ -801,6 +842,16 @@ async function enviarSolicitacao() {
       numero_solicitacao: reqNumber, equipamento: itensResumido,
       message: `🖥️ NOVA SOLICITAÇÃO — PEDIDOS — CETEC PALMAS\n\n📋 Protocolo: ${reqNumber}\n📅 Data/Hora: ${dataHora}\n\n👤 SOLICITANTE\n• Nome: ${nome}\n• E-mail: ${emailUser}\n• Setor: ${setor}\n• Tipo: ${unidade}\n• Telefone: ${ramal||'—'}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${selectedUrgEmoji} ${selectedUrg}\n⏱️ Tempo de Uso: ${tempoUso}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\n---\nResponda este e-mail para notificar o solicitante.`
     });
+
+    // Auditório com Coffee-break/Decoração/Cadeiras e Mesas: envia cópia ao Administrativo
+    if (precisaAdministrativo) {
+      const extrasTxt=[auditExtras.coffee?'☕ Coffee-break':null, auditExtras.decoracao?'🎨 Decoração':null, auditExtras.cadeiras?'🪑 Cadeiras e Mesas':null].filter(Boolean).join(', ');
+      await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_GESTOR, {
+        name: nome, to_email: EMAIL_ADMINISTRATIVO, email_solicitante: emailUser,
+        numero_solicitacao: reqNumber, equipamento: itensResumido,
+        message: `👥 SOLICITAÇÃO DE AUDITÓRIO — NECESSIDADES ADICIONAIS\n\n📋 Protocolo: ${reqNumber}\n📅 Data/Hora: ${dataHora}\n\n👤 SOLICITANTE\n• Nome: ${nome}\n• E-mail: ${emailUser}\n• Setor: ${setor}\n\n👥 Nº de participantes: ${auditItem.participantes||'—'}\n✅ Necessidades: ${extrasTxt}\n\n📅 Datas/Horários\n${(auditItem.dias||[]).map(d=>`• ${d.data?new Date(d.data+'T00:00').toLocaleDateString('pt-BR'):'—'} das ${d.inicio||'—'} às ${d.termino||'—'}`).join('\n')}\n\n📝 JUSTIFICATIVA\n${just}\n\n---\nEsta solicitação de Auditório requer providências do setor Administrativo.`
+      });
+    }
 
     // Se Docente, envia cópia também para o técnico
     if (isDocente) {

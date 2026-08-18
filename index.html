@@ -833,10 +833,9 @@ async function enviarSolicitacao() {
     if(error) throw error;
 
     // Define destinatário conforme setor
-    const isDocente = setor.toLowerCase() === 'docentes';
-    const emailAprovador = isDocente ? 'wilmarcorreia@sistemafieto.com.br' : EMAIL_GESTOR;
+    const emailAprovador = EMAIL_GESTOR;
 
-    // E-mail para o aprovador (Wilmar ou Neuzely)
+    // E-mail para o aprovador
     await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_GESTOR, {
       name: nome, to_email: emailAprovador, email_solicitante: emailUser,
       numero_solicitacao: reqNumber, equipamento: itensResumido,
@@ -850,15 +849,6 @@ async function enviarSolicitacao() {
         name: nome, to_email: EMAIL_ADMINISTRATIVO, email_solicitante: emailUser,
         numero_solicitacao: reqNumber, equipamento: itensResumido,
         message: `👥 SOLICITAÇÃO DE AUDITÓRIO — NECESSIDADES ADICIONAIS\n\n📋 Protocolo: ${reqNumber}\n📅 Data/Hora: ${dataHora}\n\n👤 SOLICITANTE\n• Nome: ${nome}\n• E-mail: ${emailUser}\n• Setor: ${setor}\n\n👥 Nº de participantes: ${auditItem.participantes||'—'}\n✅ Necessidades: ${extrasTxt}\n\n📅 Datas/Horários\n${(auditItem.dias||[]).map(d=>`• ${d.data?new Date(d.data+'T00:00').toLocaleDateString('pt-BR'):'—'} das ${d.inicio||'—'} às ${d.termino||'—'}`).join('\n')}\n\n📝 JUSTIFICATIVA\n${just}\n\n---\nEsta solicitação de Auditório requer providências do setor Administrativo.`
-      });
-    }
-
-    // Se Docente, envia cópia também para o técnico
-    if (isDocente) {
-      await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_GESTOR, {
-        name: nome, to_email: EMAIL_GESTOR, email_solicitante: emailUser,
-        numero_solicitacao: reqNumber, equipamento: itensResumido,
-        message: `🖥️ CÓPIA — PEDIDO DE DOCENTE\n\nProtocolo: ${reqNumber}\nSolicitante: ${nome}\nSetor: ${setor}\nEquipamentos: ${itensLista}\nUrgência: ${selectedUrgEmoji} ${selectedUrg}\nTempo de Uso: ${tempoUso}\n\nEste pedido foi encaminhado para aprovação de Wilmar Correia.`
       });
     }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pedidos-ti-v1';
+const CACHE_NAME = 'pedidos-ti-v2';
 const STATIC_ASSETS = [
   '/pedidos-ti/',
   '/pedidos-ti/index.html',
@@ -40,7 +40,20 @@ self.addEventListener('fetch', event => {
     return; // fetch normal, sem interceptar
   }
 
-  // Cache-first para assets locais
+  // Network-first para páginas HTML (navegação): sempre busca a versão mais nova,
+  // só usa o cache se estiver offline. Evita servir telas desatualizadas após deploy.
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || caches.match('/pedidos-ti/index.html')))
+    );
+    return;
+  }
+
+  // Cache-first para os demais assets locais (ícones, manifest, etc.)
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

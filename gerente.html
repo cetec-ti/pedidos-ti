@@ -372,6 +372,34 @@ function togglePwd(btn) {
   btn.title = showing ? 'Mostrar senha' : 'Ocultar senha';
 }
 
+// ── SEGURANÇA: Rate Limiting Login ──
+const RATE_KEY = 'login_attempts';
+const RATE_MAX = 5;
+const RATE_BLOCK_MS = 15 * 60 * 1000; // 15 minutos
+
+function verificarRateLimit() {
+  const raw = sessionStorage.getItem(RATE_KEY);
+  if (!raw) return true;
+  const { count, bloqueadoAte } = JSON.parse(raw);
+  if (bloqueadoAte && Date.now() < bloqueadoAte) {
+    const min = Math.ceil((bloqueadoAte - Date.now()) / 60000);
+    return `bloqueado:${min}`;
+  }
+  return count < RATE_MAX;
+}
+
+function registrarTentativaFalha() {
+  const raw = sessionStorage.getItem(RATE_KEY);
+  let { count = 0, bloqueadoAte = null } = raw ? JSON.parse(raw) : {};
+  count++;
+  if (count >= RATE_MAX) bloqueadoAte = Date.now() + RATE_BLOCK_MS;
+  sessionStorage.setItem(RATE_KEY, JSON.stringify({ count, bloqueadoAte }));
+}
+
+function limparRateLimit() {
+  sessionStorage.removeItem(RATE_KEY);
+}
+
 async function entrar() {
   const rl = verificarRateLimit();
   if (rl !== true) {

@@ -186,6 +186,24 @@ textarea{resize:vertical;min-height:90px;}
 .modal-btn.blue{background:var(--blue);color:#fff;}
 .modal-btn.red{background:var(--danger);color:#fff;}
 
+/* ── SELETOR DE HORÁRIO (RELÓGIO) ── */
+.tp-box{background:#fff;border-radius:20px;padding:28px 24px 20px;max-width:300px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.18);transform:translateY(20px) scale(0.97);transition:transform .25s;text-align:center;}
+.modal-overlay.show .tp-box{transform:translateY(0) scale(1);}
+.tp-display{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:20px;}
+.tp-digit{font-family:'DM Mono',monospace;font-size:36px;font-weight:500;padding:4px 10px;border-radius:10px;cursor:pointer;color:var(--muted);background:var(--bg);transition:all .15s;user-select:none;}
+.tp-digit.active{color:var(--blue);background:#eef4ff;}
+.tp-colon{font-family:'DM Mono',monospace;font-size:36px;font-weight:500;color:var(--muted);}
+.tp-clock{position:relative;width:230px;height:230px;border-radius:50%;background:var(--bg);margin:0 auto 20px;touch-action:none;user-select:none;cursor:pointer;}
+.tp-center-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--blue);top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;pointer-events:none;}
+.tp-hand{position:absolute;width:2px;background:var(--blue);top:50%;left:50%;transform-origin:top center;z-index:1;pointer-events:none;}
+.tp-num{position:absolute;width:30px;height:30px;line-height:30px;text-align:center;border-radius:50%;font-size:12.5px;font-weight:600;color:var(--text);transform:translate(-50%,-50%);pointer-events:none;}
+.tp-num.inner{color:var(--muted);}
+.tp-num.selected{background:var(--blue);color:#fff;}
+.tp-actions{display:flex;justify-content:flex-end;gap:4px;}
+.tp-btn{border:none;background:transparent;color:var(--blue);font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tp-btn:hover{background:#eef4ff;}
+.tp-input{cursor:pointer;background:var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>') no-repeat right 12px center/16px;}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 .form-card,.progress-bar{animation:fadeUp .4s ease both;}
 
@@ -323,7 +341,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
               </div>
               <div class="form-group">
                 <label style="font-weight:400;font-size:11px;color:var(--muted);">Horário</label>
-                <input type="time" id="f_hora_retirada">
+                <input type="text" id="f_hora_retirada" class="tp-input" placeholder="--:--" readonly onclick="abrirTimePicker(this)">
               </div>
             </div>
             <span class="field-hint">Opcional. Deixe em branco se ainda não souber a data.</span>
@@ -453,6 +471,26 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
     <div class="modal-title">Falha no envio</div>
     <div class="modal-msg" id="erroMsg">—</div>
     <button class="modal-btn red" onclick="fecharErro()">Fechar</button>
+  </div>
+</div>
+
+<!-- MODAL SELETOR DE HORÁRIO -->
+<div class="modal-overlay" id="timePickerOverlay" onclick="fecharTimePicker(event)">
+  <div class="tp-box" onclick="event.stopPropagation()">
+    <div class="tp-display">
+      <span class="tp-digit" id="tpHourDisplay" onclick="tpSetMode('hour')">08</span>
+      <span class="tp-colon">:</span>
+      <span class="tp-digit" id="tpMinuteDisplay" onclick="tpSetMode('minute')">00</span>
+    </div>
+    <div class="tp-clock" id="tpClock">
+      <div class="tp-center-dot"></div>
+      <div class="tp-hand" id="tpHand"></div>
+      <div class="tp-numbers" id="tpNumbers"></div>
+    </div>
+    <div class="tp-actions">
+      <button class="tp-btn" onclick="fecharTimePicker()">Cancelar</button>
+      <button class="tp-btn primary" onclick="tpConfirmar()">Confirmar</button>
+    </div>
   </div>
 </div>
 
@@ -632,13 +670,13 @@ function renderCart() {
           </div>
           <div>
             ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Início *</label>':''}
-            <input type="time" value="${d.inicio||''}"
-              oninput="selectedItems[${i}].dias[${di}].inicio=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
+            <input type="text" class="tp-input" placeholder="--:--" readonly value="${d.inicio||''}"
+              onclick="abrirTimePicker(this)" oninput="selectedItems[${i}].dias[${di}].inicio=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
           </div>
           <div>
             ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Término *</label>':''}
-            <input type="time" value="${d.termino||''}"
-              oninput="selectedItems[${i}].dias[${di}].termino=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
+            <input type="text" class="tp-input" placeholder="--:--" readonly value="${d.termino||''}"
+              onclick="abrirTimePicker(this)" oninput="selectedItems[${i}].dias[${di}].termino=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
           </div>
           <div>
             ${di===0?'<label style="font-size:11px;display:block;margin-bottom:3px;">&nbsp;</label>':''}
@@ -1000,7 +1038,120 @@ function showModal(msg){ document.getElementById('modalMsg').innerHTML=msg; docu
 function fecharModal(e){ if(!e||e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('show'); }
 function showModalErro(msg){ document.getElementById('erroMsg').innerHTML=msg; document.getElementById('erroOverlay').classList.add('show'); }
 function fecharErro(e){ if(!e||e.target===document.getElementById('erroOverlay')) document.getElementById('erroOverlay').classList.remove('show'); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharErro({target:document.getElementById('erroOverlay')}); }});
+
+// ── SELETOR DE HORÁRIO (RELÓGIO ANALÓGICO) ──
+let tpHour = 8, tpMinute = 0, tpMode = 'hour', tpTargetInput = null, tpDragging = false;
+const pad2 = n => String(n).padStart(2, '0');
+
+function abrirTimePicker(inputEl) {
+  tpTargetInput = inputEl;
+  const val = inputEl.value;
+  if (val && /^\d{2}:\d{2}$/.test(val)) {
+    [tpHour, tpMinute] = val.split(':').map(Number);
+  } else {
+    tpHour = 8; tpMinute = 0;
+  }
+  tpMode = 'hour';
+  tpRenderNumbers(); tpUpdateHand(); tpUpdateDisplay();
+  document.getElementById('timePickerOverlay').classList.add('show');
+}
+function fecharTimePicker(e) {
+  if (!e || e.target === document.getElementById('timePickerOverlay')) {
+    document.getElementById('timePickerOverlay').classList.remove('show');
+    tpTargetInput = null;
+  }
+}
+function tpConfirmar() {
+  if (tpTargetInput) {
+    tpTargetInput.value = `${pad2(tpHour)}:${pad2(tpMinute)}`;
+    tpTargetInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  fecharTimePicker({ target: document.getElementById('timePickerOverlay') });
+}
+function tpSetMode(mode) {
+  tpMode = mode;
+  tpRenderNumbers(); tpUpdateHand(); tpUpdateDisplay();
+}
+function tpUpdateDisplay() {
+  document.getElementById('tpHourDisplay').textContent = pad2(tpHour);
+  document.getElementById('tpMinuteDisplay').textContent = pad2(tpMinute);
+  document.getElementById('tpHourDisplay').className = 'tp-digit' + (tpMode === 'hour' ? ' active' : '');
+  document.getElementById('tpMinuteDisplay').className = 'tp-digit' + (tpMode === 'minute' ? ' active' : '');
+}
+function tpRenderNumbers() {
+  const wrap = document.getElementById('tpNumbers');
+  const R_OUTER = 92, R_INNER = 60, CENTER = 115;
+  let html = '';
+  const place = (val, R, i, extraClass, selected) => {
+    const angleRad = (i * 30) * Math.PI / 180;
+    const x = CENTER + R * Math.sin(angleRad);
+    const y = CENTER - R * Math.cos(angleRad);
+    return `<div class="tp-num${extraClass}${selected ? ' selected' : ''}" style="left:${x}px;top:${y}px;">${pad2(val)}</div>`;
+  };
+  if (tpMode === 'hour') {
+    for (let i = 0; i < 12; i++) {
+      const outerVal = i === 0 ? 0 : i;
+      const innerVal = i === 0 ? 12 : i + 12;
+      html += place(outerVal, R_OUTER, i, '', tpHour === outerVal);
+      html += place(innerVal, R_INNER, i, ' inner', tpHour === innerVal);
+    }
+  } else {
+    for (let i = 0; i < 12; i++) {
+      const val = i * 5;
+      html += place(val, R_OUTER, i, '', tpMinute === val);
+    }
+  }
+  wrap.innerHTML = html;
+}
+function tpUpdateHand() {
+  const hand = document.getElementById('tpHand');
+  let angleDeg, length;
+  if (tpMode === 'hour') {
+    const isInner = tpHour === 12 || tpHour >= 13;
+    const idx = isInner ? (tpHour === 12 ? 0 : tpHour - 12) : tpHour;
+    angleDeg = idx * 30;
+    length = isInner ? 60 : 92;
+  } else {
+    angleDeg = (tpMinute / 60) * 360;
+    length = 92;
+  }
+  hand.style.height = length + 'px';
+  hand.style.transform = `rotate(${angleDeg}deg)`;
+}
+function tpValorFromEvent(e) {
+  const clock = document.getElementById('tpClock');
+  const rect = clock.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const point = e.touches ? e.touches[0] : e;
+  const dx = point.clientX - cx, dy = point.clientY - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  let angle = Math.atan2(dx, -dy);
+  if (angle < 0) angle += 2 * Math.PI;
+  const deg = angle * 180 / Math.PI;
+  if (tpMode === 'minute') {
+    tpMinute = Math.round(deg / 6) % 60;
+  } else {
+    const outerR = 92 * (rect.width / 230), innerR = 60 * (rect.width / 230);
+    const useOuter = dist > (outerR + innerR) / 2;
+    const idx = Math.round(deg / 30) % 12;
+    tpHour = useOuter ? idx : (idx === 0 ? 12 : idx + 12);
+  }
+  tpRenderNumbers(); tpUpdateHand(); tpUpdateDisplay();
+}
+(function initTimePickerDrag(){
+  const clock = document.getElementById('tpClock');
+  const start = e => { tpDragging = true; tpValorFromEvent(e); e.preventDefault(); };
+  const move = e => { if (tpDragging) { tpValorFromEvent(e); e.preventDefault(); } };
+  const end = () => {
+    if (tpDragging && tpMode === 'hour') tpSetMode('minute');
+    tpDragging = false;
+  };
+  clock.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', end);
+})();
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharErro({target:document.getElementById('erroOverlay')}); fecharTimePicker({target:document.getElementById('timePickerOverlay')}); }});
 
 document.getElementById('anoFooter').textContent=new Date().getFullYear();
 carregarDisponibilidadeAuditorio();

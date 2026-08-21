@@ -197,7 +197,25 @@ tbody tr.extremo:hover{background:#ffe4e6!important;}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 .container{animation:fadeUp .4s ease;}
-@media(max-width:768px){.stats{grid-template-columns:repeat(2,1fr);}.detail-grid{grid-template-columns:1fr;}}
+@media(max-width:768px){
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .detail-grid{grid-template-columns:1fr;}
+  header{flex-wrap:wrap;height:auto;padding:12px 16px;gap:8px;}
+  .logo{width:100%;font-size:13px;}
+  .header-right{width:100%;flex-wrap:wrap;gap:6px;}
+  .btn-header,.btn-home,.btn-sair{font-size:12px;padding:6px 10px;}
+  .container{padding:0 12px;margin:20px auto;}
+  .filtros{gap:6px;}
+  .filtro-btn{padding:6px 12px;font-size:12px;}
+  .table-header{flex-wrap:wrap;gap:10px;align-items:flex-start;}
+  .search-box{width:100%;}
+  #tabelaWrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #tabelaWrap table{min-width:640px;}
+  .modal-box{max-height:85vh;}
+  .modal-overlay{padding:16px;}
+  .status-grid{grid-template-columns:1fr;}
+  .senha-box,.reset-box{padding:24px 20px;}
+}
 </style>
 </head>
 <body>

@@ -229,9 +229,9 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
   <main class="main">
     <div class="progress-bar" id="progressBar">
       <div class="steps">
-        <div class="step"><div class="step-num active" id="sn1">1</div><div class="step-label active" id="sl1">Identificação</div></div>
+        <div class="step"><div class="step-num active" id="sn1">1</div><div class="step-label active" id="sl1">Equipamento</div></div>
         <div class="step-line" id="line1"></div>
-        <div class="step"><div class="step-num idle" id="sn2">2</div><div class="step-label idle" id="sl2">Equipamento</div></div>
+        <div class="step"><div class="step-num idle" id="sn2">2</div><div class="step-label idle" id="sl2">Identificação</div></div>
         <div class="step-line" id="line2"></div>
         <div class="step"><div class="step-num idle" id="sn3">3</div><div class="step-label idle" id="sl3">Revisão & Envio</div></div>
       </div>
@@ -242,66 +242,12 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
       <!-- STEP 1 -->
       <div class="step-pane active" id="pane1">
         <div class="card-header">
-          <div class="card-title">Dados do Solicitante</div>
-          <div class="card-sub">Preencha suas informações para identificação da solicitação.</div>
-        </div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label>Nome completo <span class="req">*</span></label>
-            <input type="text" id="f_nome" placeholder="Ex.: Maria Silva" autocomplete="off" oninput="buscarColaborador(this.value)">
-            <div id="sugestoes" style="position:relative;"></div>
-          </div>
-          <div class="form-group">
-            <label>E-mail <span class="req">*</span></label>
-            <div class="email-split">
-              <input type="text" id="f_email" placeholder="seunome" autocomplete="off" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._+\-]/g,'');buscarColaborador(this.value,'f_email')">
-            <div id="sugestoes_email" style="position:relative;"></div>
-              <span class="email-domain">@sistemafieto.com.br</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Matrícula <span class="req">*</span></label>
-            <input type="text" id="f_matricula" placeholder="Ex.: 1806" autocomplete="off" oninput="buscarColaborador(this.value,'f_matricula')">
-            <div id="sugestoes_matricula" style="position:relative;"></div>
-          </div>
-          <div class="form-group">
-            <label>Telefone</label>
-            <input type="tel" id="f_ramal" placeholder="Ex.: (63) 99999-9999" maxlength="11">
-          </div>
-          <div class="form-group">
-            <label>Setor / Departamento <span class="req">*</span></label>
-            <select id="f_setor">
-              <option value="">Selecione...</option>
-              <option>Administrativo</option>
-              <option>COPED</option>
-              <option>Docentes</option>
-              <option>Financeiro</option>
-              <option>Gerência</option>
-              <option>Mercado</option>
-              <option>RH</option>
-              <option>SAC</option>
-              <option>Secretaria</option>
-              <option>STI</option>
-              <option>TI</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Tipo de Atendimento <span class="req">*</span></label>
-            <select id="f_unidade">
-              <option value="">Selecione...</option>
-              <option>Uso Interno (Cetec)</option>
-              <option>Uso Externo</option>
-            </select>
-          </div>
-        </div>
-        <div class="btn-row"><button class="btn btn-primary" onclick="goStep(2)">Próximo →</button></div>
-      </div>
-
-      <!-- STEP 2 -->
-      <div class="step-pane" id="pane2">
-        <div class="card-header">
           <div class="card-title">Equipamentos Solicitados</div>
           <div class="card-sub">Selecione um ou mais equipamentos. Cada item terá sua própria quantidade e especificação.</div>
+        </div>
+
+        <div id="auditorioIndisponivelBanner" style="display:none;background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;font-size:12px;color:#991b1b;margin-bottom:12px;gap:8px;align-items:center;">
+          🚫 <span>O Auditório está temporariamente indisponível para novas solicitações. Entre em contato com o setor responsável para mais informações.</span>
         </div>
 
         <div class="form-group" style="margin-bottom:12px;">
@@ -316,7 +262,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
             <div class="eq-card" onclick="toggleEq(this,'Óculos de Realidade Aumentada','🥽')"><span class="eq-emoji">🥽</span><div class="eq-name">Óculos de R. Aumentada</div></div>
             <div class="eq-card" onclick="toggleEq(this,'Fone de Ouvido','🎧')"><span class="eq-emoji">🎧</span><div class="eq-name">Fone de Ouvido</div></div>
             <div class="eq-card" onclick="toggleEq(this,'Outros','📦')"><span class="eq-emoji">📦</span><div class="eq-name">Outros</div></div>
-            <div class="eq-card" onclick="toggleEq(this,'Auditório','👥')"><span class="eq-emoji">👥</span><div class="eq-name">Auditório</div></div>
+            <div class="eq-card" id="eqCardAuditorio" onclick="toggleEq(this,'Auditório','👥')"><span class="eq-emoji">👥</span><div class="eq-name">Auditório</div></div>
           </div>
           <div id="itemCart" class="cart-wrap">
             <div class="cart-hint">Selecione ao menos um equipamento acima para adicionar ao pedido.</div>
@@ -381,6 +327,66 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
               </div>
             </div>
             <span class="field-hint">Opcional. Deixe em branco se ainda não souber a data.</span>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="goStep(2)">Próximo →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-pane" id="pane2">
+        <div class="card-header">
+          <div class="card-title">Dados do Solicitante</div>
+          <div class="card-sub">Preencha suas informações para identificação da solicitação.</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nome completo <span class="req">*</span></label>
+            <input type="text" id="f_nome" placeholder="Ex.: Maria Silva" autocomplete="off" oninput="buscarColaborador(this.value)">
+            <div id="sugestoes" style="position:relative;"></div>
+          </div>
+          <div class="form-group">
+            <label>E-mail <span class="req">*</span></label>
+            <div class="email-split">
+              <input type="text" id="f_email" placeholder="seunome" autocomplete="off" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._+\-]/g,'');buscarColaborador(this.value,'f_email')">
+            <div id="sugestoes_email" style="position:relative;"></div>
+              <span class="email-domain">@sistemafieto.com.br</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Matrícula <span class="req">*</span></label>
+            <input type="text" id="f_matricula" placeholder="Ex.: 1806" autocomplete="off" oninput="buscarColaborador(this.value,'f_matricula')">
+            <div id="sugestoes_matricula" style="position:relative;"></div>
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" id="f_ramal" placeholder="Ex.: (63) 99999-9999" maxlength="11">
+          </div>
+          <div class="form-group">
+            <label>Setor / Departamento <span class="req">*</span></label>
+            <select id="f_setor">
+              <option value="">Selecione...</option>
+              <option>Administrativo</option>
+              <option>COPED</option>
+              <option>Docentes</option>
+              <option>Financeiro</option>
+              <option>Gerência</option>
+              <option>Mercado</option>
+              <option>RH</option>
+              <option>SAC</option>
+              <option>Secretaria</option>
+              <option>STI</option>
+              <option>TI</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tipo de Atendimento <span class="req">*</span></label>
+            <select id="f_unidade">
+              <option value="">Selecione...</option>
+              <option>Uso Interno (Cetec)</option>
+              <option>Uso Externo</option>
+            </select>
           </div>
         </div>
         <div class="btn-row">
@@ -472,6 +478,63 @@ let selectedItems = [];
 let selectedUrg = '', selectedUrgEmoji = '';
 let reqNumber = '', tempoUso = '';
 
+// ── DISPONIBILIDADE DO AUDITÓRIO ──
+let auditorioConfig = { disponivel: true };
+let auditorioBloqueios = [];   // períodos bloqueados pela gerência: [{data_inicio, data_fim, motivo}]
+let auditorioReservas = [];    // outras solicitações já existentes: [{status, dias:[{data,inicio,termino}]}]
+
+async function carregarDisponibilidadeAuditorio() {
+  try {
+    const [{ data: config }, { data: bloqueios }, { data: reservas }] = await Promise.all([
+      sb.from('auditorio_config').select('*').eq('id', 1).single(),
+      sb.from('auditorio_bloqueios').select('*'),
+      sb.from('solicitacoes').select('status,auditorio_dias').not('auditorio_dias', 'is', null).in('status', ['Pendente', 'Aprovado'])
+    ]);
+    if (config) auditorioConfig = config;
+    auditorioBloqueios = bloqueios || [];
+    auditorioReservas = reservas || [];
+  } catch (err) {
+    console.warn('Falha ao carregar disponibilidade do Auditório:', err);
+  } finally {
+    atualizarBannerAuditorio();
+  }
+}
+
+function atualizarBannerAuditorio() {
+  const banner = document.getElementById('auditorioIndisponivelBanner');
+  const card = document.getElementById('eqCardAuditorio');
+  const indisponivel = auditorioConfig && auditorioConfig.disponivel === false;
+  if (banner) banner.style.display = indisponivel ? 'flex' : 'none';
+  if (card) card.style.opacity = indisponivel ? '0.5' : '1';
+}
+
+function formatarDataBR(iso) {
+  if (!iso) return '—';
+  return new Date(iso + 'T00:00').toLocaleDateString('pt-BR');
+}
+
+function diaEmBloqueio(dataISO) {
+  if (!dataISO) return null;
+  return auditorioBloqueios.find(b => dataISO >= b.data_inicio && dataISO <= b.data_fim) || null;
+}
+
+function horariosSeSobrepoem(inicioA, terminoA, inicioB, terminoB) {
+  return inicioA < terminoB && inicioB < terminoA;
+}
+
+function reservasConflitantes(dia, status) {
+  if (!dia || !dia.data || !dia.inicio || !dia.termino) return [];
+  return auditorioReservas.filter(r => {
+    if (r.status !== status || !Array.isArray(r.auditorio_dias)) return false;
+    return r.auditorio_dias.some(rd =>
+      rd.data === dia.data && horariosSeSobrepoem(dia.inicio, dia.termino, rd.inicio, rd.termino)
+    );
+  });
+}
+
+function temConflitoAprovado(dia) { return reservasConflitantes(dia, 'Aprovado').length > 0; }
+function temConflitoPendente(dia) { return reservasConflitantes(dia, 'Pendente').length > 0; }
+
 // ── SEGURANÇA: Sanitização XSS ──
 function sanitize(str) {
   if (!str) return '';
@@ -541,6 +604,10 @@ function toggleEq(card, type, emoji) {
   if (idx >= 0) { selectedItems.splice(idx,1); card.classList.remove('selected'); }
   else {
     if (type === 'Auditório') {
+      if (auditorioConfig && auditorioConfig.disponivel === false) {
+        showModal('O <strong>Auditório</strong> está temporariamente indisponível para novas solicitações. Entre em contato com o setor responsável para mais informações.');
+        return;
+      }
       selectedItems.push({type, emoji, qty:1, spec:'', dias:[{data:'', inicio:'', termino:''}], extras:{coffee:false, decoracao:false, cadeiras:false}, participantes:''});
     } else {
       selectedItems.push({type, emoji, qty:1, spec:''});
@@ -557,27 +624,28 @@ function renderCart() {
     if (item.type === 'Auditório') {
       const dias = item.dias || [{data:'', inicio:'', termino:''}];
       const diasHTML = dias.map((d, di) => `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px;">
           <div>
             ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Data *</label>':''}
             <input type="date" value="${d.data||''}" min="${new Date().toISOString().split('T')[0]}"
-              oninput="selectedItems[${i}].dias[${di}].data=this.value" style="font-size:12px;padding:7px 8px;width:100%;">
+              oninput="selectedItems[${i}].dias[${di}].data=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
           </div>
           <div>
             ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Início *</label>':''}
             <input type="time" value="${d.inicio||''}"
-              oninput="selectedItems[${i}].dias[${di}].inicio=this.value" style="font-size:12px;padding:7px 8px;width:100%;">
+              oninput="selectedItems[${i}].dias[${di}].inicio=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
           </div>
           <div>
             ${di===0?'<label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Término *</label>':''}
             <input type="time" value="${d.termino||''}"
-              oninput="selectedItems[${i}].dias[${di}].termino=this.value" style="font-size:12px;padding:7px 8px;width:100%;">
+              oninput="selectedItems[${i}].dias[${di}].termino=this.value;atualizarAvisoDia(${i},${di})" style="font-size:12px;padding:7px 8px;width:100%;">
           </div>
           <div>
             ${di===0?'<label style="font-size:11px;display:block;margin-bottom:3px;">&nbsp;</label>':''}
             ${di>0?`<button onclick="removerDiaAuditorio(${i},${di})" style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--muted);font-size:13px;">✕</button>`:'<span></span>'}
           </div>
-        </div>`).join('');
+        </div>
+        <div id="audit-warn-${i}-${di}" style="margin-bottom:8px;"></div>`).join('');
       const extras = item.extras || {coffee:false, decoracao:false, cadeiras:false};
       return `<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -622,6 +690,30 @@ function renderCart() {
       <button class="cart-item-remove" onclick="removerItem(${i})">✕</button>
     </div>`;
   }).join('');
+  selectedItems.forEach((item,i) => { if(item.type==='Auditório') (item.dias||[]).forEach((d,di)=>atualizarAvisoDia(i,di)); });
+}
+
+// ── AVISOS DE DISPONIBILIDADE/CONFLITO POR DIA ──
+function atualizarAvisoDia(i, di) {
+  const el = document.getElementById(`audit-warn-${i}-${di}`);
+  if (!el) return;
+  const d = selectedItems[i]?.dias?.[di];
+  if (!d || !d.data || !d.inicio || !d.termino) { el.innerHTML = ''; return; }
+
+  const bloqueio = diaEmBloqueio(d.data);
+  if (bloqueio) {
+    el.innerHTML = `<div style="font-size:11px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 10px;">🚫 Este dia está bloqueado para uso do Auditório${bloqueio.motivo?': '+sanitize(bloqueio.motivo):'.'}</div>`;
+    return;
+  }
+  if (temConflitoAprovado(d)) {
+    el.innerHTML = `<div style="font-size:11px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 10px;">🚫 Já existe uma reserva <strong>aprovada</strong> nesse horário. Escolha outro horário.</div>`;
+    return;
+  }
+  if (temConflitoPendente(d)) {
+    el.innerHTML = `<div style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 10px;">⚠️ Já existe outra solicitação <strong>pendente</strong> para esse horário. Seu pedido pode ser enviado, mas a aprovação vai depender de qual for decidida primeiro.</div>`;
+    return;
+  }
+  el.innerHTML = '';
 }
 function removerItem(idx) {
   const type = selectedItems[idx].type;
@@ -705,6 +797,35 @@ function limparAtalhosTemp() {
 // ── VALIDAÇÃO ──
 function validarStep(n) {
   if(n===1){
+    if(!selectedItems.length){showModal('Selecione ao menos um <strong>Equipamento</strong>.');return false;}
+    const outros=selectedItems.find(i=>i.type==='Outros'&&!i.spec.trim());
+    if(outros){showModal('O item <strong>Outros</strong> exige uma <strong>Especificação</strong>.');return false;}
+    const audit=selectedItems.find(i=>i.type==='Auditório');
+    if(audit){
+      if(auditorioConfig && auditorioConfig.disponivel===false){
+        showModal('O <strong>Auditório</strong> está temporariamente indisponível para novas solicitações.');
+        return false;
+      }
+      const dias=audit.dias||[];
+      for(let di=0;di<dias.length;di++){
+        const d=dias[di];
+        if(!d.data){showModal(`Informe a <strong>Data</strong> do dia ${di+1} do Auditório.`);return false;}
+        if(!d.inicio){showModal(`Informe o <strong>Horário de Início</strong> do dia ${di+1} do Auditório.`);return false;}
+        if(!d.termino){showModal(`Informe o <strong>Horário de Término</strong> do dia ${di+1} do Auditório.`);return false;}
+        if(d.termino<=d.inicio){showModal(`O <strong>Horário de Término</strong> do dia ${di+1} deve ser maior que o início.`);return false;}
+        const bloqueio=diaEmBloqueio(d.data);
+        if(bloqueio){showModal(`O dia ${di+1} (<strong>${formatarDataBR(d.data)}</strong>) está bloqueado para uso do Auditório${bloqueio.motivo?': '+sanitize(bloqueio.motivo):'.'}`);return false;}
+        if(temConflitoAprovado(d)){showModal(`O dia ${di+1} (<strong>${formatarDataBR(d.data)}</strong>, ${d.inicio}–${d.termino}) já possui uma reserva <strong>aprovada</strong> do Auditório nesse horário. Escolha outro horário.`);return false;}
+      }
+    }
+    const tempoVal=document.getElementById('f_tempo').value;
+    if(!tempoUso&&!tempoVal){showModal('Informe o <strong>Tempo de Uso</strong>.');return false;}
+    if(tempoVal) tempoUso=`${tempoVal} dias`;
+    if(!document.getElementById('f_justificativa').value.trim()){showModal('O campo <strong>Justificativa</strong> é obrigatório.');return false;}
+    if(!selectedUrg){showModal('Selecione o <strong>Nível de Urgência</strong>.');return false;}
+    if(tempoUso!=='Indeterminado'&&!document.getElementById('chkCompromisso').checked){showModal('Aceite o <strong>Termo de Compromisso</strong> antes de continuar.');return false;}
+  }
+  if(n===2){
     const nome=document.getElementById('f_nome').value.trim();
     const email=document.getElementById('f_email').value.trim();
     const setor=document.getElementById('f_setor').value.trim();
@@ -715,28 +836,6 @@ function validarStep(n) {
     if(!matricula){showModal('O campo <strong>Matrícula</strong> é obrigatório.');return false;}
     if(!setor){showModal('O campo <strong>Setor / Departamento</strong> é obrigatório.');return false;}
     if(!atend){showModal('O campo <strong>Tipo de Atendimento</strong> é obrigatório.');return false;}
-  }
-  if(n===2){
-    if(!selectedItems.length){showModal('Selecione ao menos um <strong>Equipamento</strong>.');return false;}
-    const outros=selectedItems.find(i=>i.type==='Outros'&&!i.spec.trim());
-    if(outros){showModal('O item <strong>Outros</strong> exige uma <strong>Especificação</strong>.');return false;}
-    const audit=selectedItems.find(i=>i.type==='Auditório');
-    if(audit){
-      const dias=audit.dias||[];
-      for(let di=0;di<dias.length;di++){
-        const d=dias[di];
-        if(!d.data){showModal(`Informe a <strong>Data</strong> do dia ${di+1} do Auditório.`);return false;}
-        if(!d.inicio){showModal(`Informe o <strong>Horário de Início</strong> do dia ${di+1} do Auditório.`);return false;}
-        if(!d.termino){showModal(`Informe o <strong>Horário de Término</strong> do dia ${di+1} do Auditório.`);return false;}
-        if(d.termino<=d.inicio){showModal(`O <strong>Horário de Término</strong> do dia ${di+1} deve ser maior que o início.`);return false;}
-      }
-    }
-    const tempoVal=document.getElementById('f_tempo').value;
-    if(!tempoUso&&!tempoVal){showModal('Informe o <strong>Tempo de Uso</strong>.');return false;}
-    if(tempoVal) tempoUso=`${tempoVal} dias`;
-    if(!document.getElementById('f_justificativa').value.trim()){showModal('O campo <strong>Justificativa</strong> é obrigatório.');return false;}
-    if(!selectedUrg){showModal('Selecione o <strong>Nível de Urgência</strong>.');return false;}
-    if(tempoUso!=='Indeterminado'&&!document.getElementById('chkCompromisso').checked){showModal('Aceite o <strong>Termo de Compromisso</strong> antes de continuar.');return false;}
   }
   return true;
 }
@@ -811,6 +910,20 @@ async function enviarSolicitacao() {
   const precisaAdministrativo = auditItem && (auditExtras.coffee || auditExtras.decoracao || auditExtras.cadeiras);
 
   try {
+    // Auditório: recarrega disponibilidade e re-checa na hora do envio (pode ter
+    // mudado — outra reserva pode ter sido aprovada — enquanto o usuário preenchia)
+    if (auditItem) {
+      await carregarDisponibilidadeAuditorio();
+      if (auditorioConfig && auditorioConfig.disponivel === false) {
+        throw new Error('O Auditório ficou indisponível para novas solicitações. Tente novamente mais tarde.');
+      }
+      for (const d of (auditItem.dias||[])) {
+        const bloqueio = diaEmBloqueio(d.data);
+        if (bloqueio) throw new Error(`O dia ${formatarDataBR(d.data)} foi bloqueado para uso do Auditório${bloqueio.motivo?': '+bloqueio.motivo:'.'}`);
+        if (temConflitoAprovado(d)) throw new Error(`O horário do dia ${formatarDataBR(d.data)} acabou de ser reservado por outra solicitação aprovada. Escolha outro horário.`);
+      }
+    }
+
     // Salva no Supabase
     const { error } = await sb.from('solicitacoes').insert({
       numero: reqNumber,
@@ -828,7 +941,10 @@ async function enviarSolicitacao() {
       tempo_uso: tempoUso,
       data_retirada: document.getElementById('f_data_retirada').value ? `${document.getElementById('f_data_retirada').value} ${document.getElementById('f_hora_retirada').value||'00:00'}` : null,
       justificativa: just,
-      status: 'Pendente'
+      status: 'Pendente',
+      auditorio_dias: auditItem ? auditItem.dias : null,
+      auditorio_extras: auditItem ? auditItem.extras : null,
+      auditorio_participantes: auditItem && auditItem.participantes ? parseInt(auditItem.participantes) : null
     });
     if(error) throw error;
 
@@ -882,6 +998,7 @@ function fecharErro(e){ if(!e||e.target===document.getElementById('erroOverlay')
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharErro({target:document.getElementById('erroOverlay')}); }});
 
 document.getElementById('anoFooter').textContent=new Date().getFullYear();
+carregarDisponibilidadeAuditorio();
 </script>
 </body>
 </html>

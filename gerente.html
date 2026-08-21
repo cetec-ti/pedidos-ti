@@ -67,6 +67,17 @@ header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:0 28p
 .logo span{color:var(--cyan);}
 .header-right{display:flex;align-items:center;gap:8px;}
 .btn-header{border-radius:8px;padding:6px 14px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+
+/* ── DISPONIBILIDADE DO AUDITÓRIO ── */
+.aud-toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;}
+.aud-toggle input{opacity:0;width:0;height:0;}
+.aud-toggle .aud-slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.2s;}
+.aud-toggle .aud-slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.aud-toggle input:checked + .aud-slider{background:var(--green);}
+.aud-toggle input:checked + .aud-slider::before{transform:translateX(20px);}
+.aud-bloqueio-item{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;}
+.aud-bloqueio-remove{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:2px 6px;border-radius:6px;flex-shrink:0;}
+.aud-bloqueio-remove:hover{color:var(--red);}
 .btn-reload{background:var(--blue);color:#fff;}
 .btn-senha{background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);}
 .btn-senha:hover{background:rgba(255,255,255,0.15);}
@@ -192,6 +203,7 @@ tbody td{padding:13px 16px;vertical-align:middle;}
     <div class="header-right">
       <a class="btn-home" href="index.html">🏠</a>
       <button class="btn-header btn-reload" id="timerBadge" onclick="this.blur();carregarDados().then(()=>iniciarAutoRefresh())">↻ Atualizar (30s)</button>
+      <button class="btn-header btn-senha" onclick="abrirAuditorio()">📅 Auditório</button>
       <button class="btn-header btn-senha" onclick="abrirTrocaSenha()">🔑 Alterar Senha</button>
       <button class="btn-header btn-senha" id="btnAusente" onclick="toggleAusente()">🏃 Modo Ausente</button>
       <button class="btn-header btn-sair" onclick="sair()">Sair</button>
@@ -261,6 +273,49 @@ tbody td{padding:13px 16px;vertical-align:middle;}
     <div class="senha-btns">
       <button class="btn-cancel" onclick="fecharSenha()">Cancelar</button>
       <button class="btn-save" onclick="trocarSenha()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AUDITÓRIO -->
+<div class="modal-overlay" id="auditorioOverlay" onclick="fecharAuditorio(event)">
+  <div class="senha-box" style="max-width:480px;text-align:left;">
+    <h3>📅 Disponibilidade do Auditório</h3>
+    <p>Controle quando o Auditório pode ser solicitado pelos colaboradores e por pessoas externas.</p>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:18px;">
+      <div>
+        <div style="font-size:13px;font-weight:600;">Disponível para novas solicitações</div>
+        <div style="font-size:11px;color:var(--muted);" id="auditorioStatusTxt">—</div>
+      </div>
+      <label class="aud-toggle">
+        <input type="checkbox" id="auditorioToggle" onchange="salvarToggleAuditorio(this.checked)">
+        <span class="aud-slider"></span>
+      </label>
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">Bloquear um período específico</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div>
+        <label style="font-size:11px;font-weight:400;color:var(--muted);display:block;margin-bottom:3px;">De</label>
+        <input type="date" id="bloqInicio">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:400;color:var(--muted);display:block;margin-bottom:3px;">Até</label>
+        <input type="date" id="bloqFim">
+      </div>
+    </div>
+    <input type="text" id="bloqMotivo" placeholder="Motivo (opcional)" style="margin-bottom:8px;">
+    <div class="senha-err" id="bloqErr">—</div>
+    <button class="btn-save" style="width:100%;margin-bottom:18px;" onclick="adicionarBloqueio()">+ Adicionar Bloqueio</button>
+
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">Períodos bloqueados</div>
+    <div id="listaBloqueios" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:18px;">
+      <div style="font-size:12px;color:var(--muted);">Carregando...</div>
+    </div>
+
+    <div class="senha-btns">
+      <button class="btn-cancel" onclick="fecharAuditorio()">Fechar</button>
     </div>
   </div>
 </div>
@@ -474,6 +529,73 @@ async function enviarResposta() {
   }
 }
 
+// ── DISPONIBILIDADE DO AUDITÓRIO ──
+async function abrirAuditorio() {
+  document.getElementById('auditorioOverlay').classList.add('show');
+  document.getElementById('bloqInicio').value = '';
+  document.getElementById('bloqFim').value = '';
+  document.getElementById('bloqMotivo').value = '';
+  document.getElementById('bloqErr').style.display = 'none';
+  await carregarPainelAuditorio();
+}
+function fecharAuditorio(e) { if(!e||e.target===document.getElementById('auditorioOverlay')) document.getElementById('auditorioOverlay').classList.remove('show'); }
+
+async function carregarPainelAuditorio() {
+  const { data: config } = await sb.from('auditorio_config').select('*').eq('id',1).single();
+  const disponivel = config ? config.disponivel : true;
+  document.getElementById('auditorioToggle').checked = disponivel;
+  document.getElementById('auditorioStatusTxt').textContent = disponivel
+    ? 'Colaboradores podem solicitar normalmente.'
+    : `Bloqueado${config?.atualizado_por ? ' por '+config.atualizado_por : ''}. Ninguém consegue solicitar agora.`;
+
+  const { data: bloqueios } = await sb.from('auditorio_bloqueios').select('*').order('data_inicio');
+  renderListaBloqueios(bloqueios || []);
+}
+
+function renderListaBloqueios(bloqueios) {
+  const el = document.getElementById('listaBloqueios');
+  if (!bloqueios.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Nenhum período bloqueado.</div>'; return; }
+  el.innerHTML = bloqueios.map(b => `
+    <div class="aud-bloqueio-item">
+      <div>
+        <strong>${new Date(b.data_inicio+'T00:00').toLocaleDateString('pt-BR')} – ${new Date(b.data_fim+'T00:00').toLocaleDateString('pt-BR')}</strong>
+        ${b.motivo ? `<div style="color:var(--muted);margin-top:2px;">${b.motivo.replace(/</g,'&lt;')}</div>` : ''}
+      </div>
+      <button class="aud-bloqueio-remove" onclick="removerBloqueio(${b.id})" title="Remover">✕</button>
+    </div>`).join('');
+}
+
+async function salvarToggleAuditorio(checked) {
+  const { error } = await sb.from('auditorio_config').update({
+    disponivel: checked, atualizado_por: currentUser.nome, atualizado_em: new Date().toISOString()
+  }).eq('id', 1);
+  if (error) { showG('e','Erro',`Falha ao atualizar: ${error.message}`); document.getElementById('auditorioToggle').checked = !checked; return; }
+  document.getElementById('auditorioStatusTxt').textContent = checked
+    ? 'Colaboradores podem solicitar normalmente.'
+    : `Bloqueado por ${currentUser.nome}. Ninguém consegue solicitar agora.`;
+}
+
+async function adicionarBloqueio() {
+  const inicio = document.getElementById('bloqInicio').value;
+  const fim = document.getElementById('bloqFim').value;
+  const motivo = document.getElementById('bloqMotivo').value.trim();
+  const errEl = document.getElementById('bloqErr');
+  errEl.style.display = 'none';
+  if (!inicio || !fim) { errEl.textContent = 'Informe as datas de início e fim.'; errEl.style.display='block'; return; }
+  if (fim < inicio) { errEl.textContent = 'A data final não pode ser antes da inicial.'; errEl.style.display='block'; return; }
+  const { error } = await sb.from('auditorio_bloqueios').insert({ data_inicio: inicio, data_fim: fim, motivo: motivo||null, criado_por: currentUser.nome });
+  if (error) { errEl.textContent = `Falha ao salvar: ${error.message}`; errEl.style.display='block'; return; }
+  document.getElementById('bloqInicio').value = '';
+  document.getElementById('bloqFim').value = '';
+  document.getElementById('bloqMotivo').value = '';
+  await carregarPainelAuditorio();
+}
+
+async function removerBloqueio(id) {
+  await sb.from('auditorio_bloqueios').delete().eq('id', id);
+  await carregarPainelAuditorio();
+}
+
 function abrirTrocaSenha(){ document.getElementById('senhaAtual').value=''; document.getElementById('senhaNova').value=''; document.getElementById('senhaConfirm').value=''; document.getElementById('senhaErr').style.display='none'; document.getElementById('senhaOk').style.display='none'; document.getElementById('senhaOverlay').classList.add('show'); }
 function fecharSenha(e){ if(!e||e.target===document.getElementById('senhaOverlay')) document.getElementById('senhaOverlay').classList.remove('show'); }
 
@@ -497,7 +619,7 @@ async function trocarSenha() {
 function showG(tipo,titulo,msg){ document.getElementById('gIcon').className=`g-icon ${tipo}`; document.getElementById('gIcon').innerHTML=tipo==='s'?'<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>':'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'; document.getElementById('gTitle').textContent=titulo; document.getElementById('gMsg').innerHTML=msg; document.getElementById('gBtn').className=`g-btn ${tipo}`; document.getElementById('gModalOverlay').classList.add('show'); }
 function fecharGModal(e){ if(!e||e.target===document.getElementById('gModalOverlay')) document.getElementById('gModalOverlay').classList.remove('show'); }
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharSenha({target:document.getElementById('senhaOverlay')}); fecharGModal({target:document.getElementById('gModalOverlay')}); } if(e.key==='Enter'&&document.getElementById('loginWrap').style.display!=='none') entrar(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({target:document.getElementById('modalOverlay')}); fecharSenha({target:document.getElementById('senhaOverlay')}); fecharGModal({target:document.getElementById('gModalOverlay')}); fecharAuditorio({target:document.getElementById('auditorioOverlay')}); } if(e.key==='Enter'&&document.getElementById('loginWrap').style.display!=='none') entrar(); });
 </script>
 
 <!-- MODAL RECUPERAÇÃO DE SENHA -->

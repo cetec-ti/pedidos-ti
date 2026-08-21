@@ -68,6 +68,12 @@ header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:0 28p
 .header-right{display:flex;align-items:center;gap:8px;}
 .btn-header{border-radius:8px;padding:6px 14px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;}
 
+/* ── MOSTRAR/OCULTAR SENHA ── */
+.pwd-wrap{position:relative;}
+.pwd-wrap input{padding-right:40px !important;}
+.pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted);padding:4px 6px;line-height:1;border-radius:6px;}
+.pwd-toggle:hover{color:var(--blue);}
+
 /* ── DISPONIBILIDADE DO AUDITÓRIO ── */
 .aud-toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;}
 .aud-toggle input{opacity:0;width:0;height:0;}
@@ -186,7 +192,10 @@ tbody td{padding:13px 16px;vertical-align:middle;}
     <div class="login-title">Central de Aprovações</div>
     <div class="login-sub">Cetec Palmas — Pedidos</div>
     <input type="text" id="usuarioInput" placeholder="Usuário" onkeydown="if(event.key==='Enter')entrar()">
-    <input type="password" id="senhaInput" placeholder="Senha" onkeydown="if(event.key==='Enter')entrar()">
+    <div class="pwd-wrap">
+      <input type="password" id="senhaInput" placeholder="Senha" onkeydown="if(event.key==='Enter')entrar()">
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+    </div>
     <button onclick="entrar()">Entrar</button>
     <div class="login-err" id="loginErr">Usuário ou senha incorretos.</div>
     <a class="login-back" href="index.html">← Voltar ao formulário</a>
@@ -265,9 +274,18 @@ tbody td{padding:13px 16px;vertical-align:middle;}
   <div class="senha-box">
     <h3>🔑 Alterar Senha</h3>
     <p>Usuário: <strong id="senhaUsuario">—</strong></p>
-    <input type="password" id="senhaAtual" placeholder="Senha atual">
-    <input type="password" id="senhaNova" placeholder="Nova senha">
-    <input type="password" id="senhaConfirm" placeholder="Confirmar nova senha">
+    <div class="pwd-wrap">
+      <input type="password" id="senhaAtual" placeholder="Senha atual">
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+    </div>
+    <div class="pwd-wrap">
+      <input type="password" id="senhaNova" placeholder="Nova senha">
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+    </div>
+    <div class="pwd-wrap">
+      <input type="password" id="senhaConfirm" placeholder="Confirmar nova senha">
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+    </div>
     <div class="senha-err" id="senhaErr">—</div>
     <div class="senha-ok" id="senhaOk">Senha alterada com sucesso!</div>
     <div class="senha-btns">
@@ -342,6 +360,15 @@ emailjs.init(EMAILJS_KEY);
 
 let currentUser=null, todasSolicitacoes=[], buscaAtual='', solAtual=null, statusSelecionado='';
 let contadorAnterior=-1, timer30=30, timerInterval=null;
+
+// ── MOSTRAR/OCULTAR SENHA ──
+function togglePwd(btn) {
+  const input = btn.previousElementSibling;
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? '👁️' : '🙈';
+  btn.title = showing ? 'Mostrar senha' : 'Ocultar senha';
+}
 
 async function entrar() {
   const rl = verificarRateLimit();
@@ -648,8 +675,14 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({targ
     <div class="reset-step" id="resetStep3">
       <h3>🔐 Nova Senha</h3>
       <p>Digite e confirme sua nova senha.</p>
-      <input type="password" id="reset_nova" placeholder="Nova senha">
-      <input type="password" id="reset_confirma" placeholder="Confirmar nova senha">
+      <div class="pwd-wrap">
+        <input type="password" id="reset_nova" placeholder="Nova senha">
+        <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+      </div>
+      <div class="pwd-wrap">
+        <input type="password" id="reset_confirma" placeholder="Confirmar nova senha">
+        <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+      </div>
       <div class="reset-err" id="reset_err3">—</div>
       <div class="reset-ok" id="reset_ok3">Senha alterada com sucesso!</div>
       <div class="reset-btns">

@@ -818,12 +818,15 @@ function validarStep(n) {
         if(temConflitoAprovado(d)){showModal(`O dia ${di+1} (<strong>${formatarDataBR(d.data)}</strong>, ${d.inicio}–${d.termino}) já possui uma reserva <strong>aprovada</strong> do Auditório nesse horário. Escolha outro horário.`);return false;}
       }
     }
-    const tempoVal=document.getElementById('f_tempo').value;
-    if(!tempoUso&&!tempoVal){showModal('Informe o <strong>Tempo de Uso</strong>.');return false;}
-    if(tempoVal) tempoUso=`${tempoVal} dias`;
+    const somenteAuditorio = audit && selectedItems.every(i=>i.type==='Auditório');
+    if(!somenteAuditorio){
+      const tempoVal=document.getElementById('f_tempo').value;
+      if(!tempoUso&&!tempoVal){showModal('Informe o <strong>Tempo de Uso</strong>.');return false;}
+      if(tempoVal) tempoUso=`${tempoVal} dias`;
+      if(!selectedUrg){showModal('Selecione o <strong>Nível de Urgência</strong>.');return false;}
+      if(tempoUso!=='Indeterminado'&&!document.getElementById('chkCompromisso').checked){showModal('Aceite o <strong>Termo de Compromisso</strong> antes de continuar.');return false;}
+    }
     if(!document.getElementById('f_justificativa').value.trim()){showModal('O campo <strong>Justificativa</strong> é obrigatório.');return false;}
-    if(!selectedUrg){showModal('Selecione o <strong>Nível de Urgência</strong>.');return false;}
-    if(tempoUso!=='Indeterminado'&&!document.getElementById('chkCompromisso').checked){showModal('Aceite o <strong>Termo de Compromisso</strong> antes de continuar.');return false;}
   }
   if(n===2){
     const nome=document.getElementById('f_nome').value.trim();
@@ -875,7 +878,7 @@ function preencherRevisao() {
     }
     return `<div>${i.emoji} <strong>${i.type}</strong> — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}</div>`;
   }).join('');
-  document.getElementById('rv_urg').textContent=selectedUrgEmoji+' '+selectedUrg;
+  document.getElementById('rv_urg').textContent=selectedUrg?(selectedUrgEmoji+' '+selectedUrg):'—';
   document.getElementById('rv_tempo').textContent=tempoUso||'—';
   const dataR=document.getElementById('f_data_retirada').value;
   const horaR=document.getElementById('f_hora_retirada').value;
@@ -908,6 +911,8 @@ async function enviarSolicitacao() {
   const auditItem = selectedItems.find(i=>i.type==='Auditório');
   const auditExtras = auditItem?.extras || {};
   const precisaAdministrativo = auditItem && (auditExtras.coffee || auditExtras.decoracao || auditExtras.cadeiras);
+  const urgenciaTxt = selectedUrg ? `${selectedUrgEmoji} ${selectedUrg}` : '—';
+  const tempoTxt = tempoUso || '—';
 
   try {
     // Auditório: recarrega disponibilidade e re-checa na hora do envio (pode ter
@@ -937,7 +942,7 @@ async function enviarSolicitacao() {
       equipamento: itensResumido,
       quantidade: selectedItems.reduce((s,i)=>s+i.qty,0),
       especificacao: selectedItems.map(i=>i.spec||'—').join(' | '),
-      urgencia: selectedUrgEmoji+' '+selectedUrg,
+      urgencia: selectedUrg?(selectedUrgEmoji+' '+selectedUrg):'—',
       tempo_uso: tempoUso,
       data_retirada: document.getElementById('f_data_retirada').value ? `${document.getElementById('f_data_retirada').value} ${document.getElementById('f_hora_retirada').value||'00:00'}` : null,
       justificativa: just,
@@ -955,7 +960,7 @@ async function enviarSolicitacao() {
     await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_GESTOR, {
       name: nome, to_email: emailAprovador, email_solicitante: emailUser,
       numero_solicitacao: reqNumber, equipamento: itensResumido,
-      message: `🖥️ NOVA SOLICITAÇÃO — PEDIDOS — CETEC PALMAS\n\n📋 Protocolo: ${reqNumber}\n📅 Data/Hora: ${dataHora}\n\n👤 SOLICITANTE\n• Nome: ${nome}\n• E-mail: ${emailUser}\n• Setor: ${setor}\n• Tipo: ${unidade}\n• Telefone: ${ramal||'—'}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${selectedUrgEmoji} ${selectedUrg}\n⏱️ Tempo de Uso: ${tempoUso}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\n---\nResponda este e-mail para notificar o solicitante.`
+      message: `🖥️ NOVA SOLICITAÇÃO — PEDIDOS — CETEC PALMAS\n\n📋 Protocolo: ${reqNumber}\n📅 Data/Hora: ${dataHora}\n\n👤 SOLICITANTE\n• Nome: ${nome}\n• E-mail: ${emailUser}\n• Setor: ${setor}\n• Tipo: ${unidade}\n• Telefone: ${ramal||'—'}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${urgenciaTxt}\n⏱️ Tempo de Uso: ${tempoTxt}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\n---\nResponda este e-mail para notificar o solicitante.`
     });
 
     // Auditório com Coffee-break/Decoração/Cadeiras e Mesas: envia cópia ao Administrativo
@@ -972,7 +977,7 @@ async function enviarSolicitacao() {
     await emailjs.send(EMAILJS_SERVICE_ID, TEMPLATE_USUARIO, {
       name: 'Pedidos — Cetec Palmas', to_email: emailUser, email_solicitante: emailUser,
       numero_solicitacao: reqNumber, equipamento: itensResumido,
-      message: `Olá, ${nome}!\n\nSua solicitação foi recebida com sucesso pela equipe de Pedidos do Cetec Palmas.\n\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 PROTOCOLO: ${reqNumber}\n━━━━━━━━━━━━━━━━━━━━━━━\n\n📅 Data/Hora: ${dataHora}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${selectedUrgEmoji} ${selectedUrg}\n⏱️ Tempo de Uso: ${tempoUso}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\nVocê será notificado assim que o técnico responder.\n\nAtenciosamente,\nAndresson Mouzinho\nSupporte em TI - Cetec Palmas`
+      message: `Olá, ${nome}!\n\nSua solicitação foi recebida com sucesso pela equipe de Pedidos do Cetec Palmas.\n\n━━━━━━━━━━━━━━━━━━━━━━━\n📋 PROTOCOLO: ${reqNumber}\n━━━━━━━━━━━━━━━━━━━━━━━\n\n📅 Data/Hora: ${dataHora}\n\n📦 ITENS SOLICITADOS\n${itensLista}\n\n⚡ Urgência: ${urgenciaTxt}\n⏱️ Tempo de Uso: ${tempoTxt}\n📅 Retirada Agendada: ${document.getElementById('f_data_retirada').value ? new Date(document.getElementById('f_data_retirada').value+'T00:00').toLocaleDateString('pt-BR')+' às '+(document.getElementById('f_hora_retirada').value||'—') : 'Não agendado'}\n\n📝 JUSTIFICATIVA\n${just}\n\nVocê será notificado assim que o técnico responder.\n\nAtenciosamente,\nAndresson Mouzinho\nSupporte em TI - Cetec Palmas`
     });
 
     mostrarSucesso();

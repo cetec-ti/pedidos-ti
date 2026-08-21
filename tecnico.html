@@ -74,8 +74,8 @@ header{background:var(--navy);padding:0 28px;height:60px;display:flex;align-item
 /* ── MOSTRAR/OCULTAR SENHA ── */
 .pwd-wrap{position:relative;}
 .pwd-wrap input{padding-right:40px !important;}
-.pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;color:var(--muted);padding:4px 6px;line-height:1;border-radius:6px;}
-.pwd-toggle:hover{color:var(--blue);}
+.pwd-toggle{position:absolute !important;right:8px;top:50%;transform:translateY(-50%);width:auto !important;height:auto !important;margin:0 !important;background:none !important;border:none !important;cursor:pointer;font-size:15px !important;font-weight:400 !important;color:var(--muted) !important;padding:4px 6px !important;line-height:1;border-radius:6px;}
+.pwd-toggle:hover{color:var(--blue) !important;background:none !important;}
 
 /* ── DISPONIBILIDADE DO AUDITÓRIO ── */
 .aud-toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;}
@@ -211,7 +211,7 @@ tbody tr.extremo:hover{background:#ffe4e6!important;}
     <input type="text" id="usuarioInput" placeholder="Usuário" onkeydown="if(event.key==='Enter')entrar()">
     <div class="pwd-wrap">
       <input type="password" id="senhaInput" placeholder="Senha" onkeydown="if(event.key==='Enter')entrar()">
-      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div>
     <button onclick="entrar()">Entrar</button>
     <div class="login-err" id="loginErr">Usuário ou senha incorretos.</div>
@@ -346,15 +346,15 @@ tbody tr.extremo:hover{background:#ffe4e6!important;}
     <p>Usuário: <strong id="senhaUsuario">—</strong></p>
     <div class="pwd-wrap">
       <input type="password" id="senhaAtual" placeholder="Senha atual">
-      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div>
     <div class="pwd-wrap">
       <input type="password" id="senhaNova" placeholder="Nova senha">
-      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div>
     <div class="pwd-wrap">
       <input type="password" id="senhaConfirm" placeholder="Confirmar nova senha">
-      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+      <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div>
     <div class="senha-err" id="senhaErr">—</div>
     <div class="senha-ok" id="senhaOk">Senha alterada com sucesso!</div>
@@ -432,11 +432,13 @@ let currentUser=null, todasSolicitacoes=[], filtroAtual='Todos', buscaAtual='', 
 let statusSelecionado='', contadorAnterior=-1, autoRefreshInterval=null, timer30=30, timerInterval=null;
 
 // ── MOSTRAR/OCULTAR SENHA ──
+const ICON_EYE = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a21.8 21.8 0 015.06-6.06M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a21.77 21.77 0 01-3.22 4.36M14.12 14.12a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 function togglePwd(btn) {
   const input = btn.previousElementSibling;
   const showing = input.type === 'text';
   input.type = showing ? 'password' : 'text';
-  btn.textContent = showing ? '👁️' : '🙈';
+  btn.innerHTML = showing ? ICON_EYE : ICON_EYE_OFF;
   btn.title = showing ? 'Mostrar senha' : 'Ocultar senha';
 }
 
@@ -984,11 +986,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ fecharModal({targ
       <p>Digite e confirme sua nova senha.</p>
       <div class="pwd-wrap">
         <input type="password" id="reset_nova" placeholder="Nova senha">
-        <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+        <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
       <div class="pwd-wrap">
         <input type="password" id="reset_confirma" placeholder="Confirmar nova senha">
-        <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha">👁️</button>
+        <button type="button" class="pwd-toggle" onclick="togglePwd(this)" title="Mostrar senha"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
       <div class="reset-err" id="reset_err3">—</div>
       <div class="reset-ok" id="reset_ok3">Senha alterada com sucesso!</div>

@@ -66,6 +66,7 @@ header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:0 28p
 .logo-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;}
 .logo span{color:var(--cyan);}
 .header-right{display:flex;align-items:center;gap:8px;}
+.hamburger-btn{display:none;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:18px;width:38px;height:34px;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;}
 .btn-header{border-radius:8px;padding:6px 14px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;}
 
 /* ── MOSTRAR/OCULTAR SENHA ── */
@@ -184,10 +185,12 @@ tbody td{padding:13px 16px;vertical-align:middle;}
 @media(max-width:768px){
   .stats{grid-template-columns:1fr;}
   .detail-grid{grid-template-columns:1fr;}
-  header{flex-wrap:wrap;height:auto;padding:12px 16px;gap:8px;}
-  .logo{width:100%;font-size:13px;}
-  .header-right{width:100%;flex-wrap:wrap;gap:6px;}
-  .btn-header,.btn-home,.btn-sair{font-size:12px;padding:6px 10px;}
+  header{padding:0 16px;}
+  .logo{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw;}
+  .hamburger-btn{display:flex;}
+  .header-right{display:none;position:fixed;top:60px;left:0;right:0;background:linear-gradient(135deg,var(--navy),var(--navy2));flex-direction:column;align-items:stretch;padding:10px 16px 16px;gap:8px;box-shadow:0 12px 24px rgba(0,0,0,0.3);z-index:150;max-height:calc(100vh - 60px);overflow-y:auto;}
+  .header-right.open{display:flex;}
+  .btn-header,.btn-home,.btn-sair{width:100%;text-align:left;font-size:14px;padding:12px 14px;}
   .container{padding:0 12px;margin:20px auto;}
   .table-header{flex-wrap:wrap;gap:10px;align-items:flex-start;}
   .search-box{width:100%;}
@@ -224,7 +227,8 @@ tbody td{padding:13px 16px;vertical-align:middle;}
       <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
       Cetec Palmas — <span style="margin-left:4px;">Central de Aprovações</span>
     </div>
-    <div class="header-right">
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Abrir menu">☰</button>
+    <div class="header-right" id="headerRight">
       <a class="btn-home" href="index.html">🏠</a>
       <button class="btn-header btn-reload" id="timerBadge" onclick="this.blur();carregarDados().then(()=>iniciarAutoRefresh())">↻ Atualizar (30s)</button>
       <button class="btn-header btn-senha" onclick="abrirAuditorio()">📅 Auditório</button>
@@ -386,6 +390,14 @@ function togglePwd(btn) {
   btn.innerHTML = showing ? ICON_EYE : ICON_EYE_OFF;
   btn.title = showing ? 'Mostrar senha' : 'Ocultar senha';
 }
+
+// ── MENU MOBILE (HAMBÚRGUER) ──
+function toggleMobileMenu() {
+  document.getElementById('headerRight').classList.toggle('open');
+}
+document.getElementById('headerRight').addEventListener('click', e => {
+  if (e.target.closest('button, a')) document.getElementById('headerRight').classList.remove('open');
+});
 
 // ── SEGURANÇA: Rate Limiting Login ──
 const RATE_KEY = 'login_attempts';

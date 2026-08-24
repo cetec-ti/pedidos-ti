@@ -1,0 +1,32 @@
+name: Lembretes de Solicitações Pendentes
+
+on:
+  schedule:
+    # Horários em UTC. Brasil (BRT = UTC-3, sem horário de verão) 8h/11h/14h/17h.
+    - cron: '0 11,14,17,20 * * *'
+  workflow_dispatch: {} # permite disparar manualmente pela aba Actions, para testes
+
+jobs:
+  lembrar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/lembretes
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/lembretes/package-lock.json
+
+      - run: npm install
+
+      - run: node enviar.js
+        env:
+          SUPABASE_URL: https://lkivpaalalcqxctqhpip.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxraXZwYWFsYWxjcXhjdHFocGlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzYzMDIsImV4cCI6MjA5NDcxMjMwMn0.uqfAlC1jnOxMRJoTj1Rczy_MnQcER8C8OaiW0-puk8s
+          VAPID_PUBLIC_KEY: BKBT1jH3CJs4Dmb_Debj9gG2luNRVzoBlSQ3ZYehbxKi3pDfxPa7nkUWX2vDNcMO-gu7_bYSj6N-vajFiLMSnR0
+          VAPID_PRIVATE_KEY: ${{ secrets.WEBPUSH_PRIVATE_KEY }}
+          VAPID_SUBJECT: mailto:andressonmouzinho@sistemafieto.com.br

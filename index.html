@@ -354,7 +354,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
             </div>
           </div>
           <div class="form-group full">
-            <label>📅 Agendar Retirada</label>
+            <label>📅 Agendar Retirada <span class="req">*</span></label>
             <div class="form-grid" style="margin-top:4px;">
               <div class="form-group">
                 <label style="font-weight:400;font-size:11px;color:var(--muted);">Data</label>
@@ -365,7 +365,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);}
                 <input type="text" id="f_hora_retirada" class="tp-input" placeholder="--:--" readonly onclick="abrirTimePicker(this)">
               </div>
             </div>
-            <span class="field-hint">Opcional. Deixe em branco se ainda não souber a data.</span>
+            <span class="field-hint">Data prevista para retirada do equipamento.</span>
           </div>
         </div>
         <div class="btn-row">
@@ -884,6 +884,8 @@ function validarStep(n) {
       if(tempoVal) tempoUso=`${tempoVal} dias`;
       if(!selectedUrg){showModal('Selecione o <strong>Nível de Urgência</strong>.');return false;}
       if(tempoUso!=='Indeterminado'&&!document.getElementById('chkCompromisso').checked){showModal('Aceite o <strong>Termo de Compromisso</strong> antes de continuar.');return false;}
+      if(!document.getElementById('f_data_retirada').value){showModal('Informe a <strong>Data de Retirada</strong>.');return false;}
+      if(!document.getElementById('f_hora_retirada').value){showModal('Informe o <strong>Horário de Retirada</strong>.');return false;}
     }
     if(!document.getElementById('f_justificativa').value.trim()){showModal('O campo <strong>Justificativa</strong> é obrigatório.');return false;}
   }

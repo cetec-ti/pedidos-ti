@@ -231,6 +231,7 @@ tbody td{padding:13px 16px;vertical-align:middle;}
     <div class="header-right" id="headerRight">
       <a class="btn-home" href="index.html">🏠</a>
       <button class="btn-header btn-reload" id="timerBadge" onclick="this.blur();carregarDados().then(()=>iniciarAutoRefresh())">↻ Atualizar (30s)</button>
+      <button class="btn-header btn-senha" id="btnNotif" onclick="ativarNotificacoes()">🔔 Ativar Notificações</button>
       <button class="btn-header btn-senha" onclick="abrirAuditorio()">📅 Auditório</button>
       <button class="btn-header btn-senha" onclick="abrirTrocaSenha()">🔑 Alterar Senha</button>
       <button class="btn-header btn-senha" id="btnAusente" onclick="toggleAusente()">🏃 Modo Ausente</button>
@@ -455,6 +456,7 @@ function iniciarDashboard() {
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
   document.getElementById('senhaUsuario').textContent=currentUser.usuario;
+  verificarStatusNotif();
 
   // Personaliza aviso conforme perfil
   if (currentUser.usuario === 'wilmarcorreia') {
@@ -610,6 +612,65 @@ async function enviarResposta() {
     showG('e','Erro',`Falha ao registrar: ${err?.message||err}`);
   } finally {
     btn.disabled=false; btn.textContent='📨 Confirmar Decisão';
+  }
+}
+
+// ── NOTIFICAÇÕES PUSH (lembretes de pendências) ──
+const VAPID_PUBLIC_KEY = 'BKBT1jH3CJs4Dmb_Debj9gG2luNRVzoBlSQ3ZYehbxKi3pDfxPa7nkUWX2vDNcMO-gu7_bYSj6N-vajFiLMSnR0';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+function atualizarBtnNotif(ativo) {
+  const btn = document.getElementById('btnNotif');
+  if (btn) btn.textContent = ativo ? '🔔 Notificações Ativas' : '🔔 Ativar Notificações';
+}
+
+async function verificarStatusNotif() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    atualizarBtnNotif(!!sub);
+  } catch (_) {}
+}
+
+async function ativarNotificacoes() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    showG('e', 'Não suportado', 'Seu navegador não suporta notificações push.');
+    return;
+  }
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      showG('e', 'Permissão negada', 'Você precisa permitir notificações nas configurações do navegador para ativar os lembretes.');
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const json = sub.toJSON();
+    const { error } = await sb.from('push_subscriptions').upsert({
+      usuario: currentUser.usuario,
+      pagina: 'gerente.html',
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth
+    }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    showG('s', 'Notificações ativadas!', 'Você vai receber lembretes de solicitações pendentes 4x ao dia (8h, 11h, 14h e 17h) até que sejam autorizadas ou reprovadas.');
+    atualizarBtnNotif(true);
+  } catch (err) {
+    showG('e', 'Erro', `Falha ao ativar: ${err?.message || err}`);
   }
 }
 

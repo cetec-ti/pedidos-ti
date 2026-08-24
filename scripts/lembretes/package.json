@@ -1,0 +1,11 @@
+{
+  "name": "lembretes-pendentes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Envia notificações push 4x ao dia lembrando de solicitações pendentes de aprovação (Pedidos — Cetec Palmas)",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "web-push": "^3.6.7"
+  }
+}

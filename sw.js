@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pedidos-ti-v2';
+const CACHE_NAME = 'pedidos-ti-v3';
 const STATIC_ASSETS = [
   '/pedidos-ti/',
   '/pedidos-ti/index.html',
@@ -71,6 +71,35 @@ self.addEventListener('fetch', event => {
           return caches.match('/pedidos-ti/index.html');
         }
       });
+    })
+  );
+});
+
+// ── PUSH: exibe o pop-up de lembrete quando a notificação chega ──
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) { data = { title: 'Pedidos — Cetec Palmas', body: event.data ? event.data.text() : '' }; }
+
+  const title = data.title || 'Pedidos — Cetec Palmas';
+  const options = {
+    body: data.body || '',
+    icon: '/pedidos-ti/icon-192x192.png',
+    badge: '/pedidos-ti/icon-192x192.png',
+    tag: data.tag || undefined,
+    data: { url: data.url || '/pedidos-ti/gerente.html' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Clique na notificação: foca uma aba já aberta do painel, ou abre uma nova
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : '/pedidos-ti/gerente.html';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsArr => {
+      const existing = clientsArr.find(c => c.url.includes(targetUrl.split('/').pop()));
+      if (existing) return existing.focus();
+      return self.clients.openWindow(targetUrl);
     })
   );
 });

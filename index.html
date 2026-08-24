@@ -930,15 +930,17 @@ function preencherRevisao() {
   document.getElementById('rv_setor').textContent=document.getElementById('f_setor').value;
   document.getElementById('rv_unidade').textContent=document.getElementById('f_unidade').value;
   document.getElementById('rv_ramal').textContent=document.getElementById('f_ramal').value||'—';
+  const audit = selectedItems.find(i=>i.type==='Auditório');
   document.getElementById('rv_eq').innerHTML=selectedItems.map(i=>{
     if(i.type==='Auditório'){
       const ex=i.extras||{}; const extrasTxt=[ex.coffee?'☕ Coffee-break':null, ex.decoracao?'🎨 Decoração':null, ex.cadeiras?'🪑 Cadeiras e Mesas':null].filter(Boolean).join(', ');
-      return `<div>${i.emoji} <strong>${i.type}</strong>${i.participantes?` — ${i.participantes} participante(s)`:''}${extrasTxt?`<br><span style="font-weight:400;font-size:12px;color:var(--muted);">${extrasTxt}</span>`:''}</div>`;
+      const diasTxt = (i.dias||[]).map(d=>`${formatarDataBR(d.data)} ${d.inicio||'--:--'}–${d.termino||'--:--'}`).join('; ');
+      return `<div>${i.emoji} <strong>${i.type}</strong> — ${diasTxt}${i.participantes?` — ${i.participantes} participante(s)`:''}${extrasTxt?`<br><span style="font-weight:400;font-size:12px;color:var(--muted);">${extrasTxt}</span>`:''}</div>`;
     }
     return `<div>${i.emoji} <strong>${i.type}</strong> — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}</div>`;
   }).join('');
   document.getElementById('rv_urg').textContent=selectedUrg?(selectedUrgEmoji+' '+selectedUrg):'—';
-  document.getElementById('rv_tempo').textContent=tempoUso||'—';
+  document.getElementById('rv_tempo').textContent=tempoUso || (audit ? (audit.dias||[]).map(d=>`${formatarDataBR(d.data)} ${d.inicio||'--:--'}–${d.termino||'--:--'}`).join('; ') : '') || '—';
   const dataR=document.getElementById('f_data_retirada').value;
   const horaR=document.getElementById('f_hora_retirada').value;
   document.getElementById('rv_retirada').textContent=dataR?`${new Date(dataR+'T00:00').toLocaleDateString('pt-BR')} às ${horaR||'—'}`:'Não agendado';
@@ -957,10 +959,12 @@ async function enviarSolicitacao() {
   const ramal=document.getElementById('f_ramal').value;
   const just=document.getElementById('f_justificativa').value;
   const dataHora=new Date().toLocaleString('pt-BR');
+  const formatarDiasAuditorio = dias => (dias||[]).map(d => `${formatarDataBR(d.data)} ${d.inicio||'--:--'}–${d.termino||'--:--'}`).join('; ');
   const itensLista=selectedItems.map(i=>{
     if(i.type==='Auditório'){
       const ex=i.extras||{}; const extrasTxt=[ex.coffee?'☕ Coffee-break':null, ex.decoracao?'🎨 Decoração':null, ex.cadeiras?'🪑 Cadeiras e Mesas':null].filter(Boolean).join(', ');
-      return `• ${i.emoji} ${i.type}${i.participantes?` — ${i.participantes} participante(s)`:''}${extrasTxt?` — Necessidades: ${extrasTxt}`:''}`;
+      const diasTxt = formatarDiasAuditorio(i.dias);
+      return `• ${i.emoji} ${i.type} — ${diasTxt}${i.participantes?` — ${i.participantes} participante(s)`:''}${extrasTxt?` — Necessidades: ${extrasTxt}`:''}`;
     }
     return `• ${i.emoji} ${i.type} — Qtd: ${i.qty}${i.spec?` (${i.spec})`:''}`;
   }).join('\n');
@@ -971,7 +975,7 @@ async function enviarSolicitacao() {
   const auditExtras = auditItem?.extras || {};
   const precisaAdministrativo = auditItem && (auditExtras.coffee || auditExtras.decoracao || auditExtras.cadeiras);
   const urgenciaTxt = selectedUrg ? `${selectedUrgEmoji} ${selectedUrg}` : '—';
-  const tempoTxt = tempoUso || '—';
+  const tempoTxt = tempoUso || (auditItem ? formatarDiasAuditorio(auditItem.dias) : '') || '—';
 
   try {
     // Auditório: recarrega disponibilidade e re-checa na hora do envio (pode ter

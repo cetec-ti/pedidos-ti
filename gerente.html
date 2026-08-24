@@ -431,7 +431,29 @@ document.getElementById('headerRight').addEventListener('click', e => {
   if (e.target.closest('button, a')) document.getElementById('headerRight').classList.remove('open');
 });
 
+// ── AUTENTICAÇÃO (Supabase Auth) ──
+// O usuário digita só o login; o domínio é anexado por trás.
+const EMAIL_DOMINIO = '@sistemafieto.com.br';
+const ROLE_ESPERADA = 'gerente';
+
+// Monta o perfil a partir da sessão. O papel vem de app_metadata, que só
+// pode ser alterado por admin — se viesse de user_metadata, qualquer um
+// poderia se autopromover a gerente.
+function perfilDaSessao(session) {
+  if (!session || !session.user) return null;
+  const meta = session.user.app_metadata || {};
+  if (meta.role !== ROLE_ESPERADA) return null;
+  return {
+    id: session.user.id,
+    usuario: meta.usuario || (session.user.email || '').split('@')[0],
+    nome: meta.nome || meta.usuario || '',
+    role: meta.role
+  };
+}
+
 // ── SEGURANÇA: Rate Limiting Login ──
+// Complementar: o Supabase Auth já aplica rate limiting no servidor.
+// Este aqui é só feedback de UX — sozinho seria burlável pelo cliente.
 const RATE_KEY = 'login_attempts';
 const RATE_MAX = 5;
 const RATE_BLOCK_MS = 15 * 60 * 1000; // 15 minutos
@@ -469,14 +491,20 @@ async function entrar() {
     errEl.style.display = 'block';
     return;
   }
-  const usuario=document.getElementById('usuarioInput').value.trim();
+  const usuario=document.getElementById('usuarioInput').value.trim().toLowerCase();
   const senha=document.getElementById('senhaInput').value;
-  const { data, error } = await sb.from('usuarios').select('*').eq('usuario',usuario).eq('senha',senha).eq('role','gerente').single();
-  if(data&&!error){
-    currentUser=data;
-    limparRateLimit(); sessionStorage.setItem('gerente_auth',JSON.stringify({id:data.id,usuario:data.usuario,nome:data.nome,role:data.role}));
+  const email = usuario.includes('@') ? usuario : usuario + EMAIL_DOMINIO;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+  const perfil = error ? null : perfilDaSessao(data.session);
+
+  if(perfil){
+    currentUser=perfil;
+    limparRateLimit();
     iniciarDashboard();
   } else {
+    // Autenticou mas não tem o papel desta área: encerra a sessão.
+    if(!error) await sb.auth.signOut();
     registrarTentativaFalha();
     document.getElementById('loginErr').style.display='block';
     document.getElementById('senhaInput').value='';
@@ -501,10 +529,15 @@ function iniciarDashboard() {
   iniciarAutoRefresh();
 }
 
-function sair() { clearInterval(timerInterval); sessionStorage.removeItem('gerente_auth'); location.reload(); }
+async function sair() { clearInterval(timerInterval); await sb.auth.signOut(); location.reload(); }
 
-const saved=sessionStorage.getItem('gerente_auth');
-if(saved){ try{ currentUser=JSON.parse(saved); document.getElementById('senhaUsuario').textContent=currentUser.usuario; iniciarDashboard(); }catch(_){ sessionStorage.removeItem('gerente_auth'); } }
+// Restaura a sessão (agora validada pelo Supabase, não por sessionStorage
+// forjável). Um JWT expirado ou adulterado simplesmente não autentica.
+(async () => {
+  const { data } = await sb.auth.getSession();
+  const perfil = perfilDaSessao(data.session);
+  if (perfil) { currentUser = perfil; iniciarDashboard(); }
+})();
 
 function solicitarPermissaoNotificacao() { if('Notification' in window&&Notification.permission==='default') Notification.requestPermission(); }
 function notificar(qtd,pedido) {
@@ -784,11 +817,16 @@ async function trocarSenha() {
   errEl.style.display='none'; okEl.style.display='none';
   if(!atual||!nova||!confirm){ errEl.textContent='Preencha todos os campos.'; errEl.style.display='block'; return; }
   if(nova!==confirm){ errEl.textContent='As senhas não coincidem.'; errEl.style.display='block'; return; }
-  if(nova.length<6){ errEl.textContent='Mínimo de 6 caracteres.'; errEl.style.display='block'; return; }
-  const { data:user } = await sb.from('usuarios').select('*').eq('usuario',currentUser.usuario).eq('senha',atual).single();
-  if(!user){ errEl.textContent='Senha atual incorreta.'; errEl.style.display='block'; return; }
-  const { error } = await sb.from('usuarios').update({senha:nova}).eq('usuario',currentUser.usuario);
-  if(error){ errEl.textContent='Erro ao salvar.'; errEl.style.display='block'; return; }
+  if(nova.length<8){ errEl.textContent='Mínimo de 8 caracteres.'; errEl.style.display='block'; return; }
+
+  // Reautentica para confirmar a senha atual antes de permitir a troca.
+  const { error:errAtual } = await sb.auth.signInWithPassword({
+    email: currentUser.usuario + EMAIL_DOMINIO, password: atual
+  });
+  if(errAtual){ errEl.textContent='Senha atual incorreta.'; errEl.style.display='block'; return; }
+
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if(error){ errEl.textContent=`Erro ao salvar: ${error.message}`; errEl.style.display='block'; return; }
   okEl.style.display='block';
   setTimeout(()=>fecharSenha(),2000);
 }
@@ -914,6 +952,12 @@ async function enviarCodigoReset() {
   const errEl = document.getElementById('reset_err1');
   errEl.style.display = 'none';
   if (!usuario) { errEl.textContent = 'Informe seu usuário.'; errEl.style.display = 'block'; return; }
+
+  // TEMPORÁRIO (Fase 1 -> Fase 3): o fluxo antigo guardava o código num
+  // local legível por qualquer um. Desativado até a Edge Function entrar.
+  errEl.innerHTML = 'Recuperação por e-mail em manutenção.<br>Solicite a redefinição ao Suporte de TI.';
+  errEl.style.display = 'block';
+  return;
   const { data: user } = await sb.from('usuarios').select('*').eq('usuario', usuario).single();
   if (!user) { errEl.textContent = 'Usuário não encontrado.'; errEl.style.display = 'block'; return; }
   const emailDestino = usuario + '@sistemafieto.com.br';

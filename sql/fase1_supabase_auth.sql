@@ -25,10 +25,8 @@ set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
   || '{"role":"gerente","nome":"Neuzely Santos","usuario":"neuzelysantos"}'::jsonb
 where email = 'neuzelysantos@sistemafieto.com.br';
 
-update auth.users
-set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
-  || '{"role":"gerente","nome":"Wilmar Correia Liberio","usuario":"wilmarcorreia"}'::jsonb
-where email = 'wilmarcorreia@sistemafieto.com.br';
+-- Wilmar Correia foi deixado de fora: não atua mais como aprovador neste
+-- escopo, então não recebe conta de acesso.
 
 update auth.users
 set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)

@@ -518,11 +518,6 @@ function iniciarDashboard() {
   iniciarMonitorSessao();
   verificarStatusNotif();
 
-  // Personaliza aviso conforme perfil
-  if (currentUser.usuario === 'wilmarcorreia') {
-    document.getElementById('avisoGerente').innerHTML = '📚 Você está visualizando apenas as solicitações do setor <strong>Docentes</strong> que aguardam sua autorização.';
-  }
-
   solicitarPermissaoNotificacao();
   carregarModoAusente();
   carregarDados();
@@ -553,11 +548,8 @@ function iniciarAutoRefresh() {
 }
 function atualizarTimerBadge(){ const el=document.getElementById('timerBadge'); if(el) el.textContent=`↻ Atualizar (${timer30}s)`; }
 async function silentRefresh() {
-  const isWilmar = currentUser.usuario === 'wilmarcorreia';
-  let q = sb.from('solicitacoes').select('*').eq('status','Em análise').order('created_at',{ascending:false});
-  if (isWilmar) q = q.eq('setor','Docentes');
-  else q = q.neq('setor','Docentes');
-  const { data } = await q;
+  const { data } = await sb.from('solicitacoes').select('*')
+    .eq('status','Em análise').order('created_at',{ascending:false});
   if(!data) return;
   if(contadorAnterior>=0&&data.length>contadorAnterior) notificar(data.length-contadorAnterior,data[0]);
   contadorAnterior=data.length;
@@ -568,16 +560,9 @@ async function silentRefresh() {
 async function carregarDados() {
   document.getElementById('tabelaWrap').innerHTML='<div class="loading">Carregando...</div>';
 
-  // Wilmar vê só Docentes, Neuzely vê os demais setores
-  const isWilmar = currentUser.usuario === 'wilmarcorreia';
-  let query = sb.from('solicitacoes').select('*').eq('status','Em análise').order('created_at',{ascending:false});
-  if (isWilmar) {
-    query = query.eq('setor','Docentes');
-  } else {
-    query = query.neq('setor','Docentes');
-  }
-
-  const { data:analise } = await query;
+  // A gerência vê as solicitações de todos os setores, inclusive Docentes.
+  const { data:analise } = await sb.from('solicitacoes').select('*')
+    .eq('status','Em análise').order('created_at',{ascending:false});
   const { count:aprovados } = await sb.from('solicitacoes').select('*',{count:'exact',head:true}).eq('status','Aprovado').eq('respondido_por',currentUser.nome);
   todasSolicitacoes=analise||[];
   contadorAnterior=todasSolicitacoes.length;

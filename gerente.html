@@ -392,6 +392,37 @@ function togglePwd(btn) {
   btn.title = showing ? 'Mostrar senha' : 'Ocultar senha';
 }
 
+// ── SEGURANÇA: Expiração de sessão por inatividade (8h) ──
+const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 horas
+let sessionTimer = null;
+
+function resetarTimer() {
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(() => {
+    alert('Sua sessão expirou por inatividade. Faça login novamente.');
+    sair();
+  }, SESSION_TIMEOUT);
+}
+
+function iniciarMonitorSessao() {
+  ['click','keydown','mousemove','touchstart'].forEach(ev =>
+    document.addEventListener(ev, resetarTimer, { passive: true })
+  );
+  resetarTimer();
+}
+
+// ── SEGURANÇA: Sanitização XSS ──
+function sanitize(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
 // ── MENU MOBILE (HAMBÚRGUER) ──
 function toggleMobileMenu() {
   document.getElementById('headerRight').classList.toggle('open');
@@ -444,7 +475,7 @@ async function entrar() {
   if(data&&!error){
     currentUser=data;
     limparRateLimit(); sessionStorage.setItem('gerente_auth',JSON.stringify({id:data.id,usuario:data.usuario,nome:data.nome,role:data.role}));
-    iniciarDashboard(); iniciarMonitorSessao();
+    iniciarDashboard();
   } else {
     registrarTentativaFalha();
     document.getElementById('loginErr').style.display='block';
@@ -456,6 +487,7 @@ function iniciarDashboard() {
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
   document.getElementById('senhaUsuario').textContent=currentUser.usuario;
+  iniciarMonitorSessao();
   verificarStatusNotif();
 
   // Personaliza aviso conforme perfil

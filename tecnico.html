@@ -549,7 +549,7 @@ async function entrar() {
   if(data && !error) {
     currentUser=data;
     limparRateLimit(); sessionStorage.setItem('tecnico_auth', JSON.stringify({id:data.id,usuario:data.usuario,nome:data.nome,role:data.role}));
-    iniciarDashboard(); iniciarMonitorSessao();
+    iniciarDashboard();
   } else {
     registrarTentativaFalha();
     document.getElementById('loginErr').style.display='block';
@@ -561,6 +561,7 @@ function iniciarDashboard() {
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
   document.getElementById('senhaUsuario').textContent=currentUser.usuario;
+  iniciarMonitorSessao();
   solicitarPermissaoNotificacao();
   verificarStatusNotif();
   carregarDados();
